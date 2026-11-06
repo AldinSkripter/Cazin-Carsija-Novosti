@@ -1,4 +1,5 @@
 import os
+import asyncio
 import re
 import time
 import random
@@ -64,6 +65,9 @@ async def resolve_block(b, used):
         r = await query_articles(category=b.get("category_slug") if t == "category" else None, video=t == "video",
                                  gallery=t == "gallery", limit=lim, exclude=list(used) if b.get("dedupe", True) else None)
         res = r["items"]
+        if not res and used and t != "latest":
+            res = (await query_articles(category=b.get("category_slug") if t == "category" else None, video=t == "video",
+                                        gallery=t == "gallery", limit=lim))["items"]
     elif t == "most_read":
         res = (await query_articles(sort="popular", limit=lim))["items"]
     elif t == "manual":
@@ -71,7 +75,7 @@ async def resolve_block(b, used):
         docs = await db.articles.find(public_filter({"id": {"$in": ids}}), CARD).to_list(50)
         res = await enrich(sorted(docs, key=lambda a: ids.index(a["id"])))
     if res is not None:
-        if t in ("hero", "latest", "manual"):
+        if t in ("hero", "manual"):
             used.update(a["id"] for a in res)
         b["articles"] = res
     return b
@@ -304,7 +308,7 @@ async def submit_news(request: Request, name: str = Form(...), contact: str = Fo
     for f in photos[:5]:
         raw = await f.read()
         try:
-            mid, variants, w, h = process_image(raw)
+            mid, variants, w, h = await asyncio.to_thread(process_image, raw)
         except ValueError as e:
             raise HTTPException(400, str(e))
         stored.append({"id": mid, **variants})
@@ -407,7 +411,7 @@ async def media_file(path: str):
     if not path.startswith(f"{APP_NAME}/media/") or ".." in path:
         raise HTTPException(404, "Nije pronađeno")
     try:
-        data, ct = get_object(path)
+        data, ct = await asyncio.to_thread(get_object, path)  # sync storage call must not block the event loop
     except Exception:
         raise HTTPException(404, "Nije pronađeno")
     return Response(data, media_type=ct, headers={"Cache-Control": "public, max-age=31536000, immutable"})

@@ -1,5 +1,6 @@
 import json
 import re
+import asyncio
 from datetime import timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Body
@@ -210,7 +211,7 @@ async def media_upload(files: list[UploadFile] = File(...), user=Depends(require
     for f in files[:20]:
         raw = await f.read()
         try:
-            mid, variants, w, h = process_image(raw)
+            mid, variants, w, h = await asyncio.to_thread(process_image, raw)
         except ValueError as e:
             raise HTTPException(400, f"{f.filename}: {e}")
         doc = {"id": mid, "filename": (f.filename or "")[:150], **variants, "width": w, "height": h, "alt": "", "caption": "", "credit": "",
@@ -251,10 +252,10 @@ async def crop(mid: str, body: dict, user=Depends(require("media.manage"))):
     ex = await db.media.find_one({"id": mid}, {"_id": 0})
     if not ex:
         raise HTTPException(404, "Nije pronađeno")
-    raw, _ = get_object(ex["large"].replace("/api/media/file/", ""))
+    raw, _ = await asyncio.to_thread(get_object, ex["large"].replace("/api/media/file/", ""))
     scale = min(1600, ex["width"]) / ex["width"]
     c = {k: float(body[k]) * scale for k in ("x", "y", "w", "h")}
-    nid, variants, w, h = process_image(raw, c)
+    nid, variants, w, h = await asyncio.to_thread(process_image, raw, c)
     doc = {**ex, "id": nid, **variants, "width": w, "height": h, "filename": f"crop-{ex['filename']}", "created_at": iso(), "uploaded_by": user["name"]}
     await db.media.insert_one(doc)
     doc.pop("_id", None)
@@ -455,7 +456,7 @@ async def create_user(body: dict, request: Request, user=Depends(require("users.
     email = str(body.get("email", "")).strip().lower()
     if "@" not in email or not body.get("name"):
         raise HTTPException(400, "Unesite ime i ispravan e-mail")
-    if await db.users.find_one({"email": email}):
+    if await db.users.find_one({"email": email, "deleted": {"$ne": True}}):
         raise HTTPException(400, "Korisnik s tim e-mailom već postoji")
     check_pw_policy(str(body.get("password", "")))
     doc = await validate_user_payload({"role": "journalist", "active": True, **body})
@@ -488,6 +489,9 @@ async def delete_user(uid: str, user=Depends(require("users.manage"))):
     if uid == user["id"]:
         raise HTTPException(400, "Ne možete obrisati sebe")
     await db.users.update_one({"id": uid}, {"$set": {"deleted": True, "active": False}})
+    u = await db.users.find_one({"id": uid}, {"email": 1})
+    if u:
+        await db.users.update_one({"id": uid}, {"$set": {"email": f"deleted-{uid[:8]}-{u['email']}"}})
     await db.sessions.update_many({"user_id": uid}, {"$set": {"revoked": True}})
     await audit(user, "user.delete", "user", uid)
     return {"ok": True}

@@ -1,0 +1,57 @@
+{
+  "summary": "First full E2E run of Cazin Čaršija Novosti (portal + CMS). Backend: 23 pytest tests in /app/backend/tests/test_ccn_portal.py, all 23 passing after one test-side fix. They cover auth (httpOnly+Secure cookies, 401 without cookies, brute-force 429 on the 6th try, 2FA QR, logout-all), RBAC workflow (journalist gets 403 on publish, submit, reject needs a reason, approve, publish, visible publicly), author with the extra articles.publish permission, scheduled publishing via the lazy scheduler, versions/restore/duplicate, media upload with webp variants, alt editing, delete returns 409 while in use, ads (sidebar, click 302 + counter, marketing gets 403 on html ads), breaking ticker, cameras CRUD and live HAK images (all 4 return 200), comment moderation, submit-news needs both consents and converts to draft, newsletter consent leaves a pending subscriber, settings/backup/audit, SEO endpoints and share og tags, AI summary (Claude Sonnet 5.5 works), folded diacritics search (Bihać/bihac, čaršiji/carsiji). Frontend (Playwright): the home page shows all widgets (logo, nav, red ticker, hero, latest, cameras, most read, weather, tags, footer, cookie banner). Also checked: article page parts, search, category with subcategories, 404, mobile at 390px (no horizontal overflow, burger menu), /admin redirect to /admin/prijava, login, dashboard, creating a user in the Korisnici dialog, journalist editor flow (save draft, no publish button, submit to review), super-admin reject (window.prompt) / featured image from media library / publish / public view, comment approval UI, home builder (move + hide, then draft preview at /?preview=1 vs live, then publish), ad campaign in the UI shows the OGLAS label and the click redirect URL, settings save, backup download, audit list, 2FA QR, journalist blocked from /admin/korisnici, AI summary in the editor, submit-news form, newsletter widget. One CRITICAL perf bug was found and fixed: /api/media/file blocked the event loop.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/media/file/{path}", "issue": "FIXED BY TESTER: called the synchronous requests-based get_object() inside an async def. Every image request blocked the whole FastAPI event loop; with 3 images in parallel, /api/health took 20s. Home page images stayed grey, networkidle timed out, and the newsletter submit hung on 'Šaljem...'. Fixed with await asyncio.to_thread(get_object, path). Health now 0.08s during image loads, home networkidle 2.3s.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/admin/media, POST /api/admin/media/{id}/crop, POST /api/public/submit-news", "issue": "NOT FIXED: these async routes still call the synchronous process_image() / put_object() / get_object() (requests, 60-120s timeouts). Uploads freeze the whole API for every visitor while they run. Wrap them in asyncio.to_thread or use httpx.AsyncClient. init_storage() is sync too.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "CORS", "issue": "CORS_ORIGINS='*' with allow_credentials=True: Starlette reflects any Origin with credentials=true. SameSite=Lax limits CSRF, but set explicit origins."},
+      {"endpoint": "GET /api/admin/backup", "issue": "Backup JSON includes the users collection with password_hash and totp_secret (super-admin only, needed for restore). Consider excluding totp_secret or warning in the UI."},
+      {"endpoint": "POST /api/admin/users", "issue": "Users are soft-deleted, but the email-uniqueness check doesn't filter deleted=True. A deleted user's email can never be reused (400 'Korisnik s tim e-mailom već postoji')."},
+      {"endpoint": "POST /api/auth/login", "issue": "The failed-attempt count is never reset when locked_until expires. After the first lockout, one more wrong password locks the account again for 15 min. Also, the IP-level limit of 20 logins per 5 min (in-memory) is easy to hit on shared IPs."},
+      {"endpoint": "POST /api/admin/articles/{id}/duplicate, GET /{id}/versions", "issue": "No ownership/can_edit check: a journalist can duplicate or list the versions of any article, including other people's drafts."},
+      {"endpoint": "POST /api/admin/articles/{id}/transition (unpublish/archive)", "issue": "Only checks articles.publish, not can_edit or assigned_categories. An editor limited to some categories can unpublish articles in any category."},
+      {"endpoint": "GET /api/public/home", "issue": "Category blocks (Cazin i Krajina, USK, BiH, Region, Svijet, Sport) return 0 articles because of cross-block dedupe when there are few articles (hero 5 + latest 3 = all 8 demo articles), so no category blocks render. Consider allowing repeats or a fallback."},
+      {"endpoint": "Sessions", "issue": "Sessions are never pruned. The profile page lists dozens of active sessions, one per login."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ArticleEditor publish after reject", "issue": "Flaky, seen once and not reproduced. As super admin: reject an article, pick a featured image, click Save, then click 'Objavi odmah' about 1.5s later. Status stayed 'Odbijeno': audit shows 2 article.update and no transition. Reloading and clicking Publish worked. Possible race in act(): dirty is still true while save is in flight, so it saves twice and the transition is skipped. Please check save()/act() sequencing.", "selector": "[data-testid=editor-publish]", "priority": "MEDIUM"},
+      {"component": "/newsletter page", "issue": "Opening /newsletter with no token only shows 'Nedostaje link.'. There is no subscribe form on that page; the only way to subscribe is the home widget.", "selector": "/newsletter", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Article editor / Ads dialog", "issues": ["Schedule (editor-publish-at) and ad start/end dates use the browser's native datetime-local picker instead of a shadcn Calendar/date-time picker", "Reject reason uses window.prompt and the restore confirm uses window.confirm. Use a shadcn Dialog with a textarea"]},
+      {"screen": "Home – Najnovije vijesti", "issues": ["The 4-column grid shows only 3 cards, leaving an empty slot", "Big empty area in the left column under the cameras widget, because the category blocks are empty"]},
+      {"screen": "Admin dashboard activity", "issues": ["Raw action keys ('auth.login', 'user.delete') appear in a Bosnian UI. Map them to Bosnian labels"]},
+      {"screen": "Article share buttons", "issues": ["The 'X' share icon is the old Twitter bird"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_ccn_portal.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Move the remaining sync storage/image work in async routes to threads: media upload, crop, submit-news photos, init_storage (HIGH, event loop is blocked)",
+    "Set explicit CORS_ORIGINS instead of '*' with credentials",
+    "Filter deleted users in the create-user email uniqueness check (or free the email on delete)",
+    "Reset login_attempts count when the lock expires",
+    "Add ownership checks to the duplicate/versions endpoints and can_edit to unpublish/archive",
+    "Investigate the editor act()/save race (publish click ignored right after save)",
+    "Replace native datetime-local, window.prompt and window.confirm with shadcn components",
+    "Make home category blocks render with few articles (dedupe fallback)"
+  ],
+  "critical_code_review_comments": [
+    "routes_public.media_file: sync requests inside async def (fixed). Same pattern remains in routes_admin.media_upload/crop and routes_public.submit_news",
+    "publish_at and scheduler use ISO string comparison; works because both sides are UTC ISO, but a client sending a time without a timezone would be read as UTC",
+    "rate_limit is in-memory per process: it resets on restart and isn't shared across workers",
+    "Ad click endpoint redirects for inactive or expired campaigns too (no active/date check)"
+  ],
+  "updated_files": ["/app/backend/routes_public.py (media_file uses asyncio.to_thread)", "/app/backend/tests/test_ccn_portal.py (new)"],
+  "success_rate": {"backend": "100% (23/23) after the media_file fix", "frontend": "~93% (one flaky publish-after-save observation)"},
+  "test_credentials": "Super admin from /app/memory/test_credentials.md works. Test users are created per run with unique emails test_{role}_{run}@example.com / TestPass123! and soft-deleted afterwards.",
+  "seed_data_creation": "None kept. Cleaned up: test users (soft-deleted), TEST_ articles (soft-deleted), campaigns, cameras, breaking items, comments, the delivered@resend.dev subscriber, test media (force-deleted). Left behind: 3 TEST_ submissions (no delete endpoint; 2 'used', 1 set to 'rejected') and audit log entries. The homepage layout was republished identical to the original. No 2FA was enabled on any account; the super admin was not modified.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=... pytest tests/test_ccn_portal.py -n 0 (needs serial mode, shared STATE across classes). Login IP rate limit is 20 per 5 min and is shared by bash and the browser (same egress IP 136.108.30.124); wait about 3 min between full runs. Comment moderation actions are 'approved'/'rejected'/'spam'/'block'/'delete'. Reject in the UI uses window.prompt, so accept the dialog in Playwright. Demo articles have is_demo=True; don't delete them.",
+  "rca of the issue": "Slow or grey images and hanging requests: /api/media/file was an async def calling services.get_object (requests.get, timeout 60, object storage latency 0.4-8s). That blocks the single uvicorn event loop, so all concurrent API requests queued behind each image fetch (/api/health measured 20s during 3 parallel image loads). Mitigation applied: asyncio.to_thread. Same class of bug remains in the upload/crop/submit-news paths."
+}

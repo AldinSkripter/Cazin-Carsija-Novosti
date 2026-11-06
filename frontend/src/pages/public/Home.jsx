@@ -9,7 +9,7 @@ import { AdSlot } from "../../components/public/AdSlot";
 import { NewsletterForm } from "../../components/public/NewsletterForm";
 import { Skeleton } from "../../components/ui/skeleton";
 
-const SIDE_AFTER = 3;
+const SIDE_AFTER = 5;
 
 export default function Home() {
   const [params] = useSearchParams();

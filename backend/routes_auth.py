@@ -69,7 +69,10 @@ async def login(body: LoginIn, request: Request, response: Response):
     email = body.email.strip().lower()
     ident = f"{ip}:{email}"
     att = await db.login_attempts.find_one({"identifier": ident})
-    if att and att.get("count", 0) >= 5 and att.get("locked_until", "") > iso():
+    if att and att.get("locked_until", "") <= iso() and att.get("count", 0) >= 5:
+        await db.login_attempts.delete_one({"identifier": ident})
+        att = None
+    if att and att.get("count", 0) >= 5:
         raise HTTPException(429, "Previše neuspjelih pokušaja. Pokušajte za 15 minuta.")
     user = await db.users.find_one({"email": email, "deleted": {"$ne": True}})
     if not user or not verify_pw(body.password, user.get("password_hash", "")):
@@ -85,6 +88,7 @@ async def login(body: LoginIn, request: Request, response: Response):
         if not pyotp.TOTP(user["totp_secret"]).verify(body.totp.strip(), valid_window=1):
             raise HTTPException(401, "Pogrešan 2FA kod")
     await db.login_attempts.delete_one({"identifier": ident})
+    await db.sessions.delete_many({"user_id": user["id"], "$or": [{"revoked": True}, {"created_at": {"$lt": iso(now() - timedelta(days=7))}}]})
     await db.users.update_one({"id": user["id"]}, {"$set": {"last_login": iso()}})
     await create_session(request, response, user)
     await audit(user, "auth.login", "user", user["id"], "", ip)

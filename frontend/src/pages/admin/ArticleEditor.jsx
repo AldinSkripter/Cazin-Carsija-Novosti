@@ -87,6 +87,7 @@ export default function ArticleEditor() {
   const [tagText, setTagText] = useState("");
   const aRef = useRef(a);
   aRef.current = a;
+  const savingRef = useRef(null);
   useEffect(() => {
     api.get("/public/categories").then((r) => setCats(r.data));
     api.get("/admin/users/directory").then((r) => setPeople(r.data));
@@ -97,6 +98,12 @@ export default function ArticleEditor() {
   const setField = (k, v) => { setA((x) => ({ ...x, [k]: v })); setDirty(true); };
   const payload = (x) => ({ ...x, category_id: x.category_id || null, tags: tagText.split(",").map((t) => t.trim()).filter(Boolean) });
   const save = useCallback(async (autosave) => {
+    if (savingRef.current) return savingRef.current;
+    savingRef.current = doSave(autosave).finally(() => { savingRef.current = null; });
+    return savingRef.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nav, tagText]);
+  const doSave = async (autosave) => {
     const cur = aRef.current;
     if (!cur.title.trim()) { if (!autosave) toast.error("Unesite naslov"); return null; }
     try {
@@ -110,13 +117,13 @@ export default function ArticleEditor() {
       if (!autosave) toast.success("Sačuvano"); else toast.message("Automatski sačuvano", { duration: 1500 });
       return data;
     } catch (e) { if (!autosave) toast.error(errMsg(e)); return null; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nav, tagText]);
+  };
   useEffect(() => {
     const t = setInterval(() => { if (dirty && aRef.current?.id && aRef.current.can_edit !== false) save(true); }, 30000);
     return () => clearInterval(t);
   }, [dirty, save]);
   const act = async (action, extra = {}) => {
+    if (savingRef.current) await savingRef.current;
     if (dirty && a.can_edit !== false) { const ok = await save(false); if (!ok) return; }
     try { const { data } = await api.post(`/admin/articles/${a.id}/transition`, { action, ...extra }); setA((x) => ({ ...x, ...data })); toast.success(`Status: ${STATUS_LABELS[data.status]}`); }
     catch (e) { toast.error(errMsg(e)); }

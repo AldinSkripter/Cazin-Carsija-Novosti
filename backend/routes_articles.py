@@ -206,7 +206,7 @@ async def transition(aid: str, body: TransitionIn, request: Request, user=Depend
         else:
             upd = {"status": "published", "published_at": a.get("published_at") or iso(), "was_published": True, "published_by": user["id"]}
     elif act in ("unpublish", "archive"):
-        if "articles.publish" not in p:
+        if "articles.publish" not in p or not can_edit(user, a):
             raise HTTPException(403, "Nemate dozvolu")
         upd = {"status": "draft" if act == "unpublish" else "archived"}
         await db.breaking_news.update_many({"article_id": aid}, {"$set": {"active": False}})
@@ -226,6 +226,8 @@ async def duplicate(aid: str, user=Depends(require("articles.create"))):
     a = await db.articles.find_one({"id": aid}, {"_id": 0})
     if not a:
         raise HTTPException(404, "Članak nije pronađen")
+    if not can_edit(user, a) and a.get("created_by") != user["id"] and "articles.edit_all" not in user["permissions"]:
+        raise HTTPException(403, "Nemate pristup ovom članku")
     nid = new_id()
     data = {k: a.get(k) for k in EDITABLE}
     data.update(title=f"{a['title']} (kopija)", slug=await unique_slug(a["slug"] + "-kopija", nid), id=nid, status="draft",
@@ -248,6 +250,9 @@ async def delete(aid: str, user=Depends(require("articles.delete"))):
 
 @router.get("/{aid}/versions")
 async def versions(aid: str, user=Depends(require("articles.edit_own", "articles.edit_all"))):
+    a = await db.articles.find_one({"id": aid}, {"_id": 0, "created_by": 1, "author_ids": 1})
+    if not a or ("articles.edit_all" not in user["permissions"] and user["id"] not in [a.get("created_by"), *a.get("author_ids", [])]):
+        raise HTTPException(403, "Nemate pristup ovom članku")
     return await db.article_versions.find({"article_id": aid}, {"_id": 0, "data.body": 0}).sort("version", -1).to_list(200)
 
 
