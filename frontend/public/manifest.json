@@ -1,0 +1,12 @@
+{
+  "short_name": "CČN",
+  "name": "Cazin Čaršija Novosti",
+  "icons": [
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0B1F3B",
+  "background_color": "#0B1F3B"
+}

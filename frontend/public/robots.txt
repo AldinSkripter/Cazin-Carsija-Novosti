@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/admin
+Disallow: /api/auth
+Disallow: /pretraga
+
+Sitemap: /api/sitemap.xml
+Sitemap: /api/news-sitemap.xml

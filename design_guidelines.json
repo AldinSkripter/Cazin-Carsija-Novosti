@@ -1,0 +1,77 @@
+{
+  "project_name": "Cazin Čaršija Novosti (CČN)",
+  "app_type": "hybrid_fullstack news portal + CMS admin",
+  "language": "Bosnian (bs-BA)",
+  "font_system": {
+    "heading_font": "Merriweather, Playfair Display, serif",
+    "body_font": "Outfit, Inter, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "character_support": "Full Latin Extended (č, ć, š, đ, ž, Č, Ć, Š, Đ, Ž)",
+    "google_fonts_url": "https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,300&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+  },
+  "color_palette": {
+    "dark_navy": "#0B1F3B",
+    "turquoise": "#00C2B8",
+    "gold": "#D4A52C",
+    "white": "#FFFFFF",
+    "light_gray": "#E6E9EF",
+    "breaking_red": "#E1142B",
+    "navy_surface_light": "#132A4C",
+    "text_primary_light": "#0B1F3B",
+    "text_secondary_light": "#4A5568",
+    "border_light": "#CBD5E1",
+    "dark_theme_bg": "#071426",
+    "dark_theme_card": "#0E2444",
+    "dark_theme_text": "#F1F5F9"
+  },
+  "brand_assets": {
+    "logo_text": "Cazin Čaršija Novosti",
+    "favicon_text": "CČN",
+    "icon_symbol": "Gold Feather Pen (Lucide Feather / SVG)",
+    "tagline": "Prve i najbrže vijesti iz Cazina i Krajine"
+  },
+  "layout_architecture": {
+    "public_header": {
+      "top_bar": "Date, Cazin Weather summary (-2°C / 14°C), Border Queue status ticker, Theme Toggle, Admin Link",
+      "main_brand_bar": "Deep Navy (#0B1F3B) background, Gold Feather Pen logo + 'Cazin Čaršija Novosti', Search input with dropdown preview, Breaking Red live count badge",
+      "nav_strip": "Horizontal category navigation: Naslovna, Cazin & Krajina, Region, Svijet, Hronika, Kultura & Sport, Kamere uživo, Video",
+      "breaking_ticker": "Full-width Breaking Red (#E1142B) bar with scrolling ticker, pause-on-hover, direct click to breaking article"
+    },
+    "public_homepage_grid": {
+      "hero_section": "Bento layout 12-cols (8-col dominant featured story with rich badge & author metadata, 4-col stacked secondary top news)",
+      "live_border_cameras": "Dedicated interactive strip for HAK border crossings (GP Maljevac, GP Izačić, GP Hadžin Potok, GP Velika Kladuša) with 10s auto-refresh snapshot toggle, live wait times (min), expandable modal",
+      "weather_widget": "Detailed Cazin 5-day forecast, humidity, wind, air quality index, hourly timeline",
+      "category_blocks": "Two-column grid for 'Cazin & Krajina' (with local tag filter) + 'Region & Svijet' (high density cards)",
+      "multimedia_section": "Dark navy background container featuring Video News player with playlist, Photo Galleries modal preview",
+      "sidebar_features": "Most Read 24h (numbered ranking 1-5), Opinion/Kolumne, Sponsor Ad Slots (300x250, 728x90 banners), Newsletter subscribe form"
+    },
+    "article_page": {
+      "header": "Breadcrumb, Category tag pill (Turquoise #00C2B8), Title (Merriweather text-3xl md:text-5xl bold), Subtitle lead paragraph, Author avatar + name, Published/Updated timestamp, Reading time, View count, Share buttons (Facebook, WhatsApp, Viber, Copy Link)",
+      "hero_image": "High-res lead image with caption, photo credit, and subtle gradient container",
+      "body_content": "Rich text typography (leading-relaxed, drop cap, pull quotes, inline ad slots, interactive image galleries, embedded video)",
+      "footer_meta": "Article tags, Author bio card, Source attribution, Comments section with nested replies & reaction emojis, Related articles 3-card grid"
+    },
+    "admin_cms_layout": {
+      "sidebar": "Dark navy (#0B1F3B) vertical menu: Dashboard, Članci (Articles list & rich editor), Kategorije, Oznake (Tags), Mediji (Media library), Početna (Homepage Builder), Breking Vijesti, Oglasi (Ads manager), Komentari, Građanske Vijesti (User submitted), Bilten (Newsletter), Korisnici & Uloge, Kamere (Border feeds), AI Asistent, Audit Log, Postavke",
+      "dashboard_stats": "4 key metric cards (Total Views Today, Active Breaking News, Draft/Pending Reviews, Camera Uptime), Recharts line chart of weekly traffic, recent published table, fast action shortcuts",
+      "article_editor": "Title input, permalink slug, rich text editor toolbar, status badge select (draft/review/approved/scheduled/published/archived), category/tags select, cover image uploader, AI Assistant drawer for auto-summaries & proofreading"
+    }
+  },
+  "component_styling_rules": {
+    "cards": "Clean borders (border-slate-200 dark:border-slate-800), rounded-lg, subtle hover shadow transition (hover:shadow-md hover:-translate-y-0.5)",
+    "buttons": "Primary: Navy #0B1F3B or Turquoise #00C2B8 with crisp contrast. Breaking/Alert: Red #E1142B. Gold accents: #D4A52C for highlights & badges",
+    "badges": "Category pills with distinct background colors (Cazin: Turquoise, Breaking: Red, Region: Navy, Sport: Green)",
+    "ads": "Clearly designated ad slots with 'Oglas / Reklama' label in small uppercase tracking-wider"
+  },
+  "image_assets": {
+    "news_studio": "https://images.pexels.com/photos/34872680/pexels-photo-34872680.jpeg",
+    "news_control_room": "https://images.pexels.com/photos/7865064/pexels-photo-7865064.jpeg",
+    "cazin_city_view": "https://images.unsplash.com/photo-1646503577763-bd0dffb91a87?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxuZXdzJTIwY2l0eSUyMGJyaWRnZXxlbnwwfHx8fDE3OTM5ODc3MzN8MA&ixlib=rb-4.1.0&q=85",
+    "border_camera_maljevac": "https://images.unsplash.com/photo-1622103358651-97d6cb0df332?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHwzfHx0cmFmZmljJTIwaGlnaHdheSUyMHJvYWR8ZW58MHx8fHwxNzkwNDk4NDI0fDA&ixlib=rb-4.1.0&q=85",
+    "border_camera_izacic": "https://images.unsplash.com/photo-1725025007885-7c3627ef8a9a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHwyfHx0cmFmZmljJTIwaGlnaHdheSUyMHJvYWR8ZW58MHx8fHwxNzkwNDk4NDI0fDA&ixlib=rb-4.1.0&q=85",
+    "border_camera_night": "https://images.unsplash.com/photo-1704287449151-27eda48a1f24?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHw0fHx0cmFmZmljJTIwaGlnaHdheSUyMHJvYWR8ZW58MHx8fHwxNzkwNDk4NDI0fDA&ixlib=rb-4.1.0&q=85"
+  },
+  "testing_requirements": {
+    "data_testid_rule": "ALL interactive components, buttons, inputs, navigation links, camera toggles, category tabs, and admin workflow buttons MUST have unique kebab-case data-testid attributes (e.g., data-testid='breaking-ticker', data-testid='border-camera-refresh-btn', data-testid='admin-article-save-btn')."
+  }
+}
