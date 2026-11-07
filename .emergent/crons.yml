@@ -1,0 +1,17 @@
+crons:
+  - name: nl-daily
+    description: "Šalje dnevni pregled najčitanijih vijesti pretplatnicima u 19h"
+    cron: "0 19 * * *"
+    timezone: "Europe/Sarajevo"
+    endpoint: "{{BASE_URL}}/api/cron/newsletter/daily"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true
+  - name: nl-weekly
+    description: "Šalje sedmični pregled najčitanijih vijesti pretplatnicima nedjeljom u 19h"
+    cron: "0 19 * * 0"
+    timezone: "Europe/Sarajevo"
+    endpoint: "{{BASE_URL}}/api/cron/newsletter/weekly"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

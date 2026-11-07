@@ -10,6 +10,7 @@ from core import (db, new_id, iso, now, slugify, sanitize_html, strip_tags, requ
                   get_current_user, hash_pw, get_settings, fold)
 from routes_auth import check_pw_policy
 from services import process_image, ai_generate
+from newsletter import build_campaign, start_send, base_url
 
 router = APIRouter(prefix="/api/admin")
 COERCE = {"str": lambda v: str(v or "").strip(), "int": lambda v: int(v or 0), "bool": bool, "list": lambda v: list(v or []),
@@ -394,20 +395,26 @@ async def campaigns(user=Depends(require("newsletter.manage"))):
 
 @router.post("/newsletter/campaigns")
 async def create_campaign(body: dict, user=Depends(require("newsletter.manage"))):
-    kind = body.get("kind", "manual")
-    days = 1 if kind == "daily" else 7
-    ids = body.get("article_ids") or []
-    if kind != "manual" or not ids:
-        top = await db.articles.find({"status": "published", "deleted": {"$ne": True}, "published_at": {"$gte": iso(now() - timedelta(days=days))}},
-                                     {"id": 1}).sort("views", -1).limit(int(body.get("count") or 8)).to_list(20)
-        ids = [a["id"] for a in top]
-    doc = {"id": new_id(), "subject": str(body.get("subject") or ("Dnevni pregled vijesti" if kind == "daily" else "Sedmični pregled vijesti"))[:200],
-           "intro": strip_tags(str(body.get("intro", "")))[:2000], "kind": kind, "article_ids": ids, "status": "draft",
-           "recipients": await db.newsletter_subscribers.count_documents({"status": "confirmed"}), "created_by": user["name"], "created_at": iso()}
+    doc = await build_campaign(body.get("kind", "manual"), body.get("article_ids"), body.get("count"), body.get("subject"), body.get("intro"), user["name"])
     await db.newsletter_campaigns.insert_one(doc)
     doc.pop("_id", None)
     await audit(user, "newsletter.campaign_create", "campaign", doc["id"], doc["subject"])
     return doc
+
+
+@router.post("/newsletter/campaigns/{cid}/send")
+async def send_camp(cid: str, request: Request, user=Depends(require("newsletter.manage"))):
+    camp = await db.newsletter_campaigns.find_one({"id": cid}, {"_id": 0, "subject": 1, "article_ids": 1})
+    if not camp:
+        raise HTTPException(404, "Kampanja ne postoji")
+    if not camp["article_ids"]:
+        raise HTTPException(400, "Kampanja nema vijesti")
+    if not await db.newsletter_subscribers.count_documents({"status": "confirmed"}):
+        raise HTTPException(400, "Nema potvrđenih pretplatnika")
+    if not await start_send(cid, base_url(await get_settings(), request)):
+        raise HTTPException(409, "Kampanja je već poslana ili se šalje")
+    await audit(user, "newsletter.campaign_send", "campaign", cid, camp["subject"])
+    return {"ok": True}
 
 
 @router.delete("/newsletter/campaigns/{cid}")

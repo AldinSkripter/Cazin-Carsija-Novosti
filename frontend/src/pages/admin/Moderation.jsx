@@ -79,11 +79,29 @@ export function Submissions() {
   );
 }
 
+const CAMP_STATUS = { draft: "Nacrt", sending: "Šalje se…", sent: "Poslano", failed: "Greška" };
+
+function CampaignRow({ c, onSend }) {
+  return (
+    <div className="text-sm py-2 border-b flex flex-wrap items-center justify-between gap-2" data-testid={`newsletter-campaign-${c.id}`}>
+      <div>
+        <p className="font-medium">{c.subject} {c.created_by === "Automatski" && <span className="text-xs text-ccn-turquoise">(automatski)</span>}</p>
+        <p className="text-xs text-slate-500">{c.article_ids.length} vijesti · {fmtDate(c.created_at)} · <span data-testid={`newsletter-campaign-status-${c.id}`}>{CAMP_STATUS[c.status] || c.status}</span>{c.sent_count != null && ` · poslano ${c.sent_count}/${c.recipients}`}{c.failed_count > 0 && `, neuspjelo ${c.failed_count}`}</p>
+      </div>
+      {(c.status === "draft" || c.status === "failed") && <Button size="sm" className="bg-ccn-navy" onClick={() => onSend(c)} data-testid={`newsletter-send-${c.id}`}>Pošalji</Button>}
+    </div>
+  );
+}
+
 export function NewsletterAdmin() {
   const [subs, setSubs] = useState([]);
   const [camps, setCamps] = useState([]);
   const load = () => { api.get("/admin/newsletter/subscribers").then((r) => setSubs(r.data)); api.get("/admin/newsletter/campaigns").then((r) => setCamps(r.data)); };
   useEffect(() => { load(); }, []);
+  const send = async (c) => {
+    if (!window.confirm(`Poslati "${c.subject}" svim potvrđenim pretplatnicima?`)) return;
+    try { await api.post(`/admin/newsletter/campaigns/${c.id}/send`); toast.success("Slanje je pokrenuto"); load(); setTimeout(load, 4000); } catch (e) { toast.error(errMsg(e)); }
+  };
   const create = async (kind) => { try { await api.post("/admin/newsletter/campaigns", { kind }); toast.success("Kampanja pripremljena"); load(); } catch (e) { toast.error(errMsg(e)); } };
   const exportCsv = () => {
     const rows = [["email", "status", "frequency", "consent_at", "consent_text"], ...subs.map((s) => [s.email, s.status, s.frequency, s.consent_at, s.consent_text])];
@@ -98,10 +116,11 @@ export function NewsletterAdmin() {
         <Button variant="outline" onClick={() => create("daily")} data-testid="newsletter-create-daily">Dnevni pregled</Button>
         <Button className="bg-ccn-navy" onClick={() => create("weekly")} data-testid="newsletter-create-weekly">Sedmični pregled</Button>
       </PageHead>
-      <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 px-4 py-2 rounded-sm mb-5">Potvrde prijave se šalju stvarnim e-mailom. Masovno slanje kampanja zahtijeva poseban servis za newslettere (npr. Mailchimp/Brevo) – kampanje se ovdje pripremaju s automatski izabranim najčitanijim vijestima.</p>
+      <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 px-4 py-2 rounded-sm mb-5">Sve ide preko ugrađenog e-mail servisa. Dnevni pregled se automatski šalje svaki dan u 19h, a sedmični nedjeljom u 19h (najčitanije vijesti, svakom pretplatniku prema izabranoj učestalosti). Ručno: napravite pregled i kliknite „Pošalji“. Svaki e-mail ima link za odjavu.</p>
       <div className="grid lg:grid-cols-2 gap-5">
         <div className="bg-white border rounded-md p-4"><h2 className="font-bold mb-3">Kampanje</h2>
-          {camps.map((c) => <p key={c.id} className="text-sm py-2 border-b flex justify-between" data-testid={`newsletter-campaign-${c.id}`}><span>{c.subject} · {c.article_ids.length} vijesti · {c.recipients} primalaca</span><span className="text-slate-400">{fmtDate(c.created_at)}</span></p>)}
+          {camps.length === 0 && <p className="text-sm text-slate-500">Još nema kampanja.</p>}
+          {camps.map((c) => <CampaignRow key={c.id} c={c} onSend={send} />)}
         </div>
         <div className="bg-white border rounded-md p-4 max-h-[500px] overflow-y-auto"><h2 className="font-bold mb-3">Pretplatnici</h2>
           {subs.map((s) => (
