@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend-only retest of the mobile header logo centering (Header.jsx L80, L98). FIRST FINDING: the running dev server was serving a STALE bundle. The compiled bundle still had className 'shrink-0' for header-logo, and the logo was 44-82px left of center. Webpack hot reload did not pick up the edit: a touch did not help, and inotify max_user_watches is 12288. After 'sudo supervisorctl restart frontend' the bundle had the new classes. Everything below was measured after that restart. RESULTS: All PASS. (1) Logo centering: at 360/390/412px the logo center minus viewport center is 0.0px. This holds at the top of the page and after scrolling (header shrinks, logo 48->40px). It holds on the home page and an article page, in light and dark mode (12/12 combinations). (2) The hamburger stays at the left (right edge 44) and mobile-search-link stays at the right (x 316/346/368). Neither overlaps the logo (logo x range 108-252 @360, 123-267 @390, 134-278 @412). An elementFromPoint hit-test confirms all three are clickable. The hamburger opens the sheet (mobile-nav visible) both at the top and when scrolled. The search icon goes to /pretraga. (3) Clicking the logo goes to /. (4) At 768px the logo is static and left-aligned (x=64, next to the hamburger) with the search box on the right. At 1920px the logo is static at x=336, the HITNO label span is at x=336 and the first nav link is at x=336. This matches iteration_2, both at the top and when scrolled.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mobile header (<768px)", "issues": ["The logo is now position:absolute and out of flow, so the hamburger and search icons now set the header row height. The row shrank from about 72px to 56px at the top and from 52px to 44px when scrolled. The logo still fits (48px in 56px; 40px in 44px, only 2px top/bottom margin when scrolled). This looks fine visually, but it is tighter than before. If the old height is wanted, add a min-height to the row (e.g. min-h-[72px] md:min-h-0 / min-h-[52px] when scrolled)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "No functional fixes needed. The logo centering works.",
+    "Environment note: frontend hot reload did not pick up the Header.jsx change, so the preview served the old bundle until 'sudo supervisorctl restart frontend'. After future edits, check that the bundle has updated (e.g. grep /static/js/bundle.js) before telling the user it is fixed.",
+    "Optional: restore the mobile header row height with a min-height (see design_issues)."
+  ],
+  "critical_code_review_comments": [
+    "With absolute centering, a wider logo (site.logo_url can be changed in admin) could overlap the hamburger or search icon on 360px screens. Currently the logo is 144px wide with about 64px clearance on each side. Consider max-w-[calc(100%-112px)] on the logo link or the img."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The mobile header logo centering was verified (diff 0px at 360/390/412, home + article, light + dark, top + scrolled). Desktop logo/HITNO/nav share x=336 at 1920. If a UI change seems not applied, check the served bundle. Hot reload was not working in this environment and needed a frontend restart.",
+  "rca of the issue": "Stale bundle: the webpack dev server watcher missed the change to Header.jsx (possibly a low inotify watch limit), so the old 'shrink-0' class was served. Fixed by restarting frontend via supervisor. No code was changed."
+}

@@ -77,7 +77,7 @@ export function Header() {
       <a href="#main" className="skip-link">Preskoči na sadržaj</a>
       <TopBar site={site} />
       <header className="sticky top-0 z-40 bg-ccn-navy shadow-[0_6px_24px_-12px_rgba(0,0,0,0.6)]">
-        <div className={`relative max-w-7xl mx-auto px-4 flex items-center gap-5 transition-all duration-300 ${scrolled ? "py-1.5" : "py-3 md:py-4"}`}>
+        <div className={`relative max-w-7xl mx-auto px-4 flex items-center gap-5 transition-all duration-300 ${scrolled ? "py-1.5 min-h-[52px]" : "py-3 md:py-4 min-h-[72px]"} md:min-h-0`}>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button className="lg:hidden text-white p-1 -ml-1" aria-label="Meni" data-testid="mobile-menu-button"><Menu className="w-6 h-6" /></button>
