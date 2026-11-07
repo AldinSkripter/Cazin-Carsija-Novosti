@@ -180,7 +180,7 @@ if [ "$AI_PROVIDER" = ollama ]; then
 fi
 
 # ---------- 7. Prenos podataka ----------
-if [ "$FRESH" = 1 ]; then
+if [ ! -f data/import/.done ]; then
   ask MIGRATE "Prenijeti vijesti, slike i korisnike sa starog sajta? (d/n)" "d"
   if [[ "$MIGRATE" =~ ^[dDyY] ]]; then
     ask OLD_URL "Adresa starog sajta" "https://carsija-novosti--4hvpmrhn.preview.emergentagent.com"
@@ -192,9 +192,10 @@ if [ "$FRESH" = 1 ]; then
     if curl -fs -b "$CJ" "$OLD_URL/api/admin/backup" -o data/import/backup.json && grep -q '"_meta"' data/import/backup.json; then
       say "Uvozim podatke i preuzimam slike…"
       docker compose exec -T backend python import_backup.py /data/import/backup.json "$OLD_URL"
-      docker compose restart backend >/dev/null; MIGRATED=1; ok "Podaci preneseni"
+      docker compose restart backend >/dev/null; MIGRATED=1; touch data/import/.done; ok "Podaci preneseni"
     else warn "Prijava na stari sajt nije uspjela – podaci nisu preneseni. Kasnije: Admin → Postavke → Vraćanje backupa."; fi
     rm -f "$CJ"
+  else touch data/import/.done
   fi
 fi
 
@@ -246,7 +247,7 @@ echo -e "${G} Portal je instaliran!${N}"
 echo -e "  Sajt:   https://$DOMAIN"
 echo -e "  Admin:  https://$DOMAIN/admin/prijava"
 if [ "${MIGRATED:-0}" = 1 ]; then echo -e "  Prijava: vaš postojeći e-mail i lozinka sa starog sajta"
-elif [ "$FRESH" = 1 ]; then echo -e "  Prijava: $ADMIN_EMAIL / $ADMIN_PASSWORD  ${Y}(promijenite lozinku nakon prijave)${N}"; fi
+elif [ -n "${ADMIN_PASSWORD:-}" ]; then echo -e "  Prijava: $ADMIN_EMAIL / $ADMIN_PASSWORD  ${Y}(promijenite lozinku nakon prijave)${N}"; fi
 echo -e "  AI:     ${AI_PROVIDER/off/isključen (premalo RAM-a)} ${OLLAMA_MODEL:+($OLLAMA_MODEL)}"
 echo -e "  Ažuriranje: Save to GitHub → Plesk Git \"Pull Updates\" → portal se sam obnovi (log: deploy/redeploy.log)"
 echo -e "${G}══════════════════════════════════════════════${N}"
