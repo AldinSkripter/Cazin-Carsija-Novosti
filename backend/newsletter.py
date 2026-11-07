@@ -164,7 +164,7 @@ async def auto_digest(kind, base):
     if not s.get("newsletter_enabled", True):
         return
     camp = await build_campaign(kind=kind, created_by="Automatski")
-    if not camp["article_ids"]:
+    if not camp["article_ids"] or not await db.newsletter_subscribers.count_documents({"status": "confirmed", "frequency": kind}):
         return
     await db.newsletter_campaigns.insert_one(dict(camp))
     await start_send(camp["id"], base, frequency=kind)

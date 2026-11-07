@@ -132,7 +132,7 @@ export function NewsletterAdmin() {
         <div className="bg-white border rounded-md p-4 max-h-[500px] overflow-y-auto"><h2 className="font-bold mb-3">Pretplatnici</h2>
           {subs.map((s) => (
             <p key={s.id} className="text-sm py-1.5 border-b flex justify-between gap-2"><span>{s.email} <span className="text-xs text-slate-400">({s.status}, {s.frequency})</span></span>
-              <button className="text-xs text-ccn-red" onClick={() => api.delete(`/admin/newsletter/subscribers/${s.id}`).then(load)}>obriši</button></p>
+              <button className="text-xs text-ccn-red" data-testid={`newsletter-sub-delete-${s.id}`} onClick={() => window.confirm(`Obrisati ${s.email}?`) && api.delete(`/admin/newsletter/subscribers/${s.id}`).then(load)}>obriši</button></p>
           ))}
         </div>
       </div>

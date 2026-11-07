@@ -1,0 +1,38 @@
+{
+  "summary": "Tested newsletter premium preview / test-send / edit / send-all / cron. Backend 10/10 pytest passed. Desktop UI flow fully works (auto-open preview after 'Sedmični pregled', premium template with logo/date/label/subject/hero image/'Još iz pregleda' thumbnails/CTA/footer 'Odjavi se', no broken images, Desktop/Mobile toggle 680->380px, save updates iframe + list, test email toast 'Probni e-mail poslan na jonuzovicaldin7@gmail.com', send-all with 0 subs -> 'Nema potvrđenih pretplatnika', row 'Pregled' buttons open dialog). FAILED: preview dialog at 390px mobile viewport - content overflows horizontally and is clipped.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/cron/newsletter/{kind} (auto_digest)", "issue": "With 0 matching subscribers it still inserts a campaign and marks it 'sent' (recipients 0). Daily cron will clutter campaign list with empty 'sent' campaigns. Skip insert when no confirmed subscribers for that frequency."},
+      {"endpoint": "PUT /api/admin/newsletter/campaigns/{id}", "issue": "Non-existent id returns 409 'Poslana kampanja se ne može mijenjati' instead of 404."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "NewsletterPreview dialog (mobile 390px)", "issue": "Dialog content overflows horizontally: iframe has fixed width 680 (desktop mode) / 380 (mobile mode) but available width is ~340px; with 'flex justify-center' the overflow is cut on the LEFT (iframe left=-15px in Mobitel mode, unreachable) and right side is clipped (DialogContent overflow-hidden). The left form panel collapses to ~140px tall internal scroller (grid max-h-[88vh] with single column), so subject/intro/save/test buttons are squeezed. Fix: on <lg make the dialog body a single overflow-y-auto column (remove max-h on grid rows / let left panel take natural height), add min-w-0 to the right panel, set iframe style width: mobile ? 380 : 680 with maxWidth:'100%', and replace justify-center with mx-auto on iframe (avoids left-clipping).", "selector": "[data-testid=newsletter-preview-dialog]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Email template", "issues": ["Template looks premium on desktop; no issues. Section label 'Još iz pregleda' is uppercase via CSS (fine)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_newsletter_preview.py", "/app/test_reports/pytest/newsletter_preview.xml"],
+  "action_items": [
+    "Fix NewsletterPreview mobile layout (390px): no horizontal overflow, iframe max-width 100%, whole dialog scrollable vertically, left panel natural height",
+    "auto_digest: do not create/send campaign when there are 0 confirmed subscribers for that frequency",
+    "PUT campaign: return 404 for unknown id"
+  ],
+  "critical_code_review_comments": [
+    "Moderation.jsx send(): uses window.confirm (browser native) - consider shadcn AlertDialog for consistency",
+    "Subscriber 'obriši' button in NewsletterAdmin lacks data-testid and confirmation",
+    "Manual 'Pošalji svima' ignores subscriber frequency (sends to all confirmed) - acceptable but should be stated in UI",
+    "Unsaved edits in preview are not used by 'Pošalji svima' or test email (they use stored version) - consider auto-saving before test/send or warning about unsaved changes"
+  ],
+  "updated_files": ["/app/backend/tests/test_newsletter_preview.py"],
+  "success_rate": {"backend": "100%", "frontend": "90% (desktop 100%, mobile layout failing)"},
+  "test_credentials": "Owner admin from /app/memory/test_credentials.md works",
+  "seed_data_creation": "Temporary TEST_ campaigns and one TEST_xxx@example.com confirmed subscriber (inserted directly, deleted after send). Cron-created 'Automatski' campaign deleted. All TEST data cleaned up; pre-existing campaign a538cf2a untouched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Test email endpoint was called 2 times (1 pytest + 1 UI) - real email to owner; avoid calling more. Run pytest with '-n 0'. window.confirm on 'Pošalji svima' must be accepted via page.on('dialog'). Only mobile layout of preview dialog needs retest."
+}

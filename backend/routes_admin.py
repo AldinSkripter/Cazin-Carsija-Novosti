@@ -423,6 +423,8 @@ async def edit_camp(cid: str, body: dict, user=Depends(require("newsletter.manag
     upd = {"subject": str(body.get("subject") or "").strip()[:200], "intro": strip_tags(str(body.get("intro") or ""))[:2000]}
     if not upd["subject"]:
         raise HTTPException(400, "Naslov je obavezan")
+    if not await db.newsletter_campaigns.count_documents({"id": cid}):
+        raise HTTPException(404, "Kampanja ne postoji")
     r = await db.newsletter_campaigns.update_one({"id": cid, "status": {"$in": ["draft", "failed"]}}, {"$set": upd})
     if not r.matched_count:
         raise HTTPException(409, "Poslana kampanja se ne može mijenjati")
