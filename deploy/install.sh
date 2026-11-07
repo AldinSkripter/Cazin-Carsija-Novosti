@@ -43,10 +43,24 @@ ok "Projekt: $APP_DIR"
 # ---------- 3. Docker ----------
 if ! command -v docker >/dev/null; then
   say "Instaliram Docker (traje 1–2 min)…"
-  curl -fsSL https://get.docker.com | sh >/dev/null 2>&1 || die "Docker instalacija nije uspjela"
+  if ! timeout 600 sh -c 'curl -fsSL https://get.docker.com | sh' >/tmp/ccn-docker.log 2>&1; then
+    warn "Službeni Docker još ne podržava ovu verziju sistema – instaliram Docker iz sistemskih paketa…"
+    if [ "$PM" = apt ]; then apt-get install -y -qq docker.io >/dev/null; apt-get install -y -qq docker-compose-v2 >/dev/null 2>&1 || apt-get install -y -qq docker-compose-plugin >/dev/null 2>&1 || true
+    else $PM install -y -q docker docker-compose-plugin >/dev/null 2>&1 || $PM install -y -q podman-docker >/dev/null; fi
+  fi
+  command -v docker >/dev/null || die "Docker instalacija nije uspjela (log: /tmp/ccn-docker.log)"
 fi
 systemctl enable --now docker >/dev/null 2>&1 || service docker start || true
-docker compose version >/dev/null 2>&1 || { [ "$PM" = apt ] && apt-get install -y -qq docker-compose-plugin >/dev/null || $PM install -y -q docker-compose-plugin; }
+if ! docker compose version >/dev/null 2>&1; then
+  if [ "$PM" = apt ]; then apt-get install -y -qq docker-compose-v2 >/dev/null 2>&1 || apt-get install -y -qq docker-compose-plugin >/dev/null 2>&1 || true
+  else $PM install -y -q docker-compose-plugin >/dev/null 2>&1 || true; fi
+fi
+if ! docker compose version >/dev/null 2>&1; then
+  mkdir -p /usr/local/lib/docker/cli-plugins
+  curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
+  chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+fi
+docker compose version >/dev/null 2>&1 || die "Docker Compose nije instaliran"
 ok "Docker $(docker --version | awk '{print $3}' | tr -d ,)"
 
 # ---------- 4. Podešavanja ----------
