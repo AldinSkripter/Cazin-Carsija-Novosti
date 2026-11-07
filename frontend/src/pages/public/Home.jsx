@@ -31,19 +31,19 @@ export default function Home() {
   const top = rest.slice(0, SIDE_AFTER);
   const bottom = rest.slice(SIDE_AFTER);
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6" data-testid="home-page">
+    <div className="max-w-7xl mx-auto px-4 py-6 md:py-8" data-testid="home-page">
       {preview && <div className="mb-4 bg-ccn-gold text-ccn-navy font-bold text-sm px-4 py-2 rounded-sm" data-testid="home-preview-banner">PREGLED NACRTA POČETNE STRANICE – nije javno objavljeno</div>}
       {hero.map((b) => <HomeBlock key={b.id} b={b} />)}
-      <div className="grid lg:grid-cols-12 gap-8 mt-10">
-        <div className="lg:col-span-8 space-y-12">{top.map((b) => <HomeBlock key={b.id} b={b} />)}</div>
-        <aside className="lg:col-span-4 space-y-6">
+      <div className="grid lg:grid-cols-12 gap-10 mt-12">
+        <div className="lg:col-span-8 space-y-14">{top.map((b) => <HomeBlock key={b.id} b={b} />)}</div>
+        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-36 self-start">
           <MostRead />
           <WeatherWidget />
           <AdSlot position="sidebar" />
           <NewsletterForm />
         </aside>
       </div>
-      <div className="space-y-12 mt-12">{bottom.map((b) => <HomeBlock key={b.id} b={b} />)}</div>
+      <div className="space-y-14 mt-14">{bottom.map((b) => <HomeBlock key={b.id} b={b} />)}</div>
     </div>
   );
 }

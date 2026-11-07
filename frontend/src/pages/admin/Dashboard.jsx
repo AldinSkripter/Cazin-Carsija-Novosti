@@ -6,11 +6,12 @@ import { api, fmtDate } from "../../lib/api";
 import { PageHead } from "./AdminLayout";
 
 function Stat({ label, value, icon: I, to, tid, accent = "text-ccn-tealdark" }) {
+  const bg = { "text-ccn-tealdark": "bg-teal-50", "text-amber-600": "bg-amber-50", "text-ccn-gold": "bg-yellow-50" }[accent] || "bg-slate-50";
   const body = (
-    <div className="bg-white border rounded-md p-4 hover:shadow-md transition-shadow h-full" data-testid={tid}>
-      <I className={`w-5 h-5 ${accent}`} />
-      <p className="text-3xl font-bold mt-2">{value ?? "–"}</p>
-      <p className="text-xs text-slate-500 uppercase tracking-wider mt-1">{label}</p>
+    <div className="bg-white border rounded-xl p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all h-full" data-testid={tid}>
+      <span className={`inline-flex w-9 h-9 rounded-lg items-center justify-center ${bg}`}><I className={`w-[18px] h-[18px] ${accent}`} /></span>
+      <p className="text-[30px] font-bold mt-3 tabular-nums leading-none">{value ?? "–"}</p>
+      <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-2 font-semibold">{label}</p>
     </div>
   );
   return to ? <Link to={to}>{body}</Link> : body;

@@ -10,9 +10,10 @@ import { Button } from "../../components/ui/button";
 function Shell({ children }) {
   useSeo({ title: "Prijava – CMS", noindex: true });
   return (
-    <div className="min-h-screen bg-ccn-navy flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-md p-8 shadow-2xl">
-        <img src="/logo-web.webp" alt="Cazin Čaršija Novosti" className="h-20 mx-auto mb-6" />
+    <div className="min-h-screen bg-ccn-navy flex items-center justify-center p-4 relative overflow-hidden grain">
+      <div className="w-full max-w-sm bg-white rounded-2xl p-8 shadow-2xl fade-up">
+        <img src="/logo-web.webp" alt="Cazin Čaršija Novosti" className="h-20 mx-auto mb-2 bg-ccn-navy rounded-xl p-2" />
+        <p className="text-center text-[11px] uppercase tracking-[0.2em] text-slate-400 mb-6">Redakcijski CMS</p>
         {children}
       </div>
     </div>

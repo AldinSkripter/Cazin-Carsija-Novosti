@@ -23,7 +23,7 @@ export function CamerasWidget({ title = "Kamere uživo sa granica", compact = fa
   if (!cams.length) return null;
   const shown = compact ? cams.slice(0, 4) : cams;
   return (
-    <section className="bg-ccn-navy rounded-md p-5 md:p-7 text-white" data-testid="cameras-widget">
+    <section className="relative bg-ccn-navy rounded-xl p-6 md:p-8 text-white overflow-hidden grain" data-testid="cameras-widget">
       <div className="flex items-center justify-between mb-5">
         <h2 className="flex items-center gap-2 font-bold text-base md:text-lg">
           <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-ccn-red opacity-75" /><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-ccn-red" /></span>
@@ -34,7 +34,7 @@ export function CamerasWidget({ title = "Kamere uživo sa granica", compact = fa
       <div className={`grid gap-4 ${compact ? "grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         {shown.map((c) => (
           <button key={c.id} onClick={() => setOpen(c)} className="text-left group" data-testid={`camera-${c.id}`}>
-            <div className="relative aspect-video overflow-hidden rounded-sm bg-ccn-navy2">
+            <div className="relative aspect-video overflow-hidden rounded-md bg-ccn-navy2 ring-1 ring-white/10 group-hover:ring-ccn-teal transition-all">
               <CamImage cam={c} tick={tick} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <span className="absolute top-2 left-2 bg-ccn-red text-[10px] font-bold px-1.5 py-0.5 rounded-sm uppercase">Uživo</span>
             </div>
