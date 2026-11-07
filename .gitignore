@@ -99,3 +99,11 @@ frontend/node_modules/.cache/default-development/7.pack
 frontend/node_modules/.cache/default-development/8.pack
 frontend/node_modules/.cache/default-development/10.pack
 frontend/node_modules/.cache/default-development/4.pack
+
+# VPS runtime
+deploy/data/
+deploy/crontab
+deploy/.redeploy
+deploy/redeploy.log
+deploy/plesk-nginx.conf
+

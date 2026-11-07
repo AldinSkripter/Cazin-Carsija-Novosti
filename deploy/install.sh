@@ -52,7 +52,8 @@ ok "Docker $(docker --version | awk '{print $3}' | tr -d ,)"
 # ---------- 4. Podešavanja ----------
 PLESK=0; command -v plesk >/dev/null && PLESK=1
 if [ ! -f .env ]; then
-  ask DOMAIN "Domena portala (bez https://, npr. cazincarsija.ba)"
+  DEF_DOMAIN=$(echo "$APP_DIR" | sed -n 's#^/var/www/vhosts/\([^/]*\)/.*#\1#p')
+  ask DOMAIN "Domena portala (bez https://, npr. cazincarsija.ba)" "$DEF_DOMAIN"
   DOMAIN="${DOMAIN#http*://}"; DOMAIN="${DOMAIN%%/*}"; DOMAIN="${DOMAIN#www.}"
   [ -n "$DOMAIN" ] || die "Domena je obavezna"
   ask ADMIN_EMAIL "E-mail vlasnika (admin)" "jonuzovicaldin7@gmail.com"
@@ -74,7 +75,7 @@ WEBHOOK_CRON_SECRET=$(rnd 32)
 ADMIN_EMAIL=$ADMIN_EMAIL
 ADMIN_PASSWORD=$ADMIN_PASSWORD
 CORS_ORIGINS=https://$DOMAIN,https://www.$DOMAIN
-EMAIL_FROM_NAME=Cazin Čaršija Novosti
+EMAIL_FROM_NAME="Cazin Čaršija Novosti"
 EMAIL_REPLY_TO=$ADMIN_EMAIL
 SMTP_HOST=$SMTP_HOST_V
 SMTP_PORT=25
@@ -186,6 +187,33 @@ cat > /etc/cron.d/ccn-backup <<EOF
 EOF
 ok "Automatski backup svaki dan u 03:30 (čuva 14 dana) u $D/data/backups"
 
+# ---------- 10. Automatsko ažuriranje nakon Plesk Git "Pull" ----------
+cat > /etc/systemd/system/ccn-redeploy.service <<EOF
+[Unit]
+Description=CCN redeploy after git pull
+[Service]
+Type=oneshot
+ExecStart=/bin/bash $D/update.sh
+EOF
+cat > /etc/systemd/system/ccn-redeploy.path <<EOF
+[Unit]
+Description=Watch CCN redeploy trigger
+[Path]
+PathChanged=$D/.redeploy
+[Install]
+WantedBy=multi-user.target
+EOF
+OWNER=$(stat -c %U "$APP_DIR"); [ -f "$D/.redeploy" ] || touch "$D/.redeploy"; chown "$OWNER" "$D/.redeploy" 2>/dev/null || true
+systemctl daemon-reload && systemctl enable --now ccn-redeploy.path >/dev/null 2>&1
+ok "Automatsko ažuriranje uključeno (okidač: deploy/.redeploy)"
+GIT_ACTION="date > deploy/.redeploy"
+if [ "$PLESK" = 1 ] && plesk ext git --help >/dev/null 2>&1; then
+  for R in $(plesk ext git --list -domain "$DOMAIN" 2>/dev/null | awk 'NR>0 && $1 ~ /\.git$|^[A-Za-z0-9._-]+$/ {print $1}'); do
+    plesk ext git --update -domain "$DOMAIN" -name "$R" -actions "$GIT_ACTION" >/dev/null 2>&1 && ok "Plesk Git ($R): dodana akcija nakon povlačenja" && GIT_SET=1
+  done
+fi
+[ "${GIT_SET:-0}" = 1 ] || warn "U Plesku: Git → Repository Settings → Enable additional deployment actions → upišite:  $GIT_ACTION"
+
 echo
 echo -e "${G}══════════════════════════════════════════════${N}"
 echo -e "${G} Portal je instaliran!${N}"
@@ -194,5 +222,5 @@ echo -e "  Admin:  https://$DOMAIN/admin/prijava"
 if [ "${MIGRATED:-0}" = 1 ]; then echo -e "  Prijava: vaš postojeći e-mail i lozinka sa starog sajta"
 elif [ "$FRESH" = 1 ]; then echo -e "  Prijava: $ADMIN_EMAIL / $ADMIN_PASSWORD  ${Y}(promijenite lozinku nakon prijave)${N}"; fi
 echo -e "  AI:     ${AI_PROVIDER/off/isključen (premalo RAM-a)} ${OLLAMA_MODEL:+($OLLAMA_MODEL)}"
-echo -e "  Ažuriranje: sudo bash $D/update.sh"
+echo -e "  Ažuriranje: Save to GitHub → Plesk Git \"Pull Updates\" → portal se sam obnovi (log: deploy/redeploy.log)"
 echo -e "${G}══════════════════════════════════════════════${N}"

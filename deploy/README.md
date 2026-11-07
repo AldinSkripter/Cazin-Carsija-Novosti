@@ -1,43 +1,58 @@
-# CČN – instalacija na VPS (Plesk)
+# CČN – instalacija na VPS s Pleskom i Git ekstenzijom
 
-Sve se instalira jednom komandom. Skripta radi na Ubuntu 20.04/22.04/24.04, Debian 11/12 i AlmaLinux/Rocky 8/9, sa Pleskom ili bez njega.
+## Jednom, na početku (5 minuta klikanja + 1 SSH komanda)
 
-## Prije pokretanja
-1. U DNS-u domene napravite **A zapis** `@` i `www` koji pokazuju na IP vašeg VPS-a (zbog besplatnog SSL-a).
-2. Kod prebacite na server na jedan od dva načina:
-   - **GitHub:** u Emergentu kliknite „Save to GitHub“, pa na serveru:
-     `git clone https://github.com/KORISNIK/REPO.git /opt/ccn`
-   - **ZIP:** preuzmite kod, raspakujte ga i u Plesk File Manageru ili preko SFTP-a ga stavite u `/opt/ccn`.
+1. **DNS:** napravite A zapise `@` i `www` koji pokazuju na IP VPS-a.
+2. **Plesk → Websites & Domains → Add Domain:** dodajte domenu, npr. `cazincarsija.ba`.
+3. **Kod na GitHub:** u Emergentu kliknite **Save to GitHub**.
+4. **Plesk → domena → Git:**
+   - Repository URL: adresa vašeg GitHub repozitorija. Ako je repozitorij privatan, Plesk pokaže SSH ključ; dodajte ga na GitHubu: Repo → Settings → Deploy keys → Add.
+   - Deployment mode: **Manual** (ili Automatic, ako ćete koristiti webhook).
+   - Deployment path: **`/ccn`**. Ne stavljajte ga u `httpdocs`.
+   - Kliknite **OK**. Plesk povuče kod u `/var/www/vhosts/DOMENA/ccn`.
+5. **SSH (samo ovaj jedan put):**
+   ```bash
+   sudo bash /var/www/vhosts/DOMENA/ccn/deploy/install.sh
+   ```
+   Skripta sama prepozna domenu, a vi potvrdite Enter. Pita još e-mail i lozinku starog sajta (za prenos podataka). Sve ostalo radi sama:
+   - instalira Docker i bazu,
+   - pokrene portal,
+   - preusmjeri nginx,
+   - izda SSL,
+   - napravi besplatni e-mail `noreply@domena`,
+   - preuzme besplatni AI,
+   - prenese vijesti, slike i korisnike,
+   - podesi dnevni backup,
+   - uključi **automatsko ažuriranje nakon Git Pull-a**.
+6. Ako je skripta na kraju napisala žutu poruku za Git, u Pleskom otvorite **Git → Repository Settings → Enable additional deployment actions** i upišite:
+   ```
+   date > deploy/.redeploy
+   ```
+   Za ovo pretplata treba imati uključen SSH pristup: Hosting & DNS → Hosting → SSH access → `/bin/bash (chrooted)`.
 
-## Instalacija (jedna komanda)
-```bash
-sudo bash /opt/ccn/deploy/install.sh
-```
-Skripta pita samo za domenu, e-mail vlasnika i (ako želite prenos) lozinku sa starog sajta. Ostalo radi sama:
-- instalira Docker, MongoDB bazu, backend i frontend,
-- u Pleskom kreira domenu (ako ne postoji), sanduče `noreply@domena` za besplatno slanje e-mailova (uz DKIM potpis) i preusmjeri nginx na portal,
-- izda besplatni SSL (Let's Encrypt) i uključi preusmjeravanje na https,
-- preuzme **besplatni AI model** (Qwen 2.5, radi na vašem serveru, bez plaćanja) prema RAM-u: 3,5 GB+ → 3b, 12 GB+ → 7b,
-- prenese sve vijesti, slike, kamere, korisnike i postavke sa starog sajta,
-- podesi automatski newsletter (dnevni u 19h, sedmični nedjeljom u 19h) i dnevni backup u 03:30.
+## Svaki sljedeći put (bez SSH-a)
+1. Ovdje u Emergentu: **Save to GitHub**.
+2. Plesk → domena → Git → **Pull Updates** (ili se povuče samo ako je mode Automatic).
+3. Portal se sam napravi i restartuje za 1–5 minuta. Prije toga uvijek napravi backup.
 
-Ako nešto pukne (npr. DNS još nije propagiran), skriptu pokrenite ponovo. Nastavlja tamo gdje je stala i ništa ne briše.
+Rezultat zadnjeg ažuriranja vidite u Plesk File Manageru: `ccn/deploy/redeploy.log`.
 
-## Svakodnevno
+## Korisne SSH komande (samo ako zatreba)
 | Šta | Komanda |
 |---|---|
-| Ažuriranje na novu verziju | `sudo bash /opt/ccn/deploy/update.sh` |
-| Ručni backup | `sudo bash /opt/ccn/deploy/backup.sh` |
-| Logovi | `cd /opt/ccn/deploy && docker compose logs -f backend` |
-| Restart | `cd /opt/ccn/deploy && docker compose restart` |
+| Ručno ažuriranje | `sudo bash /var/www/vhosts/DOMENA/ccn/deploy/update.sh` |
+| Ručni backup | `sudo bash /var/www/vhosts/DOMENA/ccn/deploy/backup.sh` |
+| Logovi | `cd /var/www/vhosts/DOMENA/ccn/deploy && sudo docker compose logs -f backend` |
+| Restart | `cd /var/www/vhosts/DOMENA/ccn/deploy && sudo docker compose restart` |
 
-## Gdje su podaci
-- Baza: `/opt/ccn/deploy/data/mongo`
-- Slike: `/opt/ccn/deploy/data/media`
-- Backupi: `/opt/ccn/deploy/data/backups` (čuva se 14 dana)
-- Podešavanja i lozinke: `/opt/ccn/deploy/.env` (ne dijelite ovu datoteku)
+## Gdje su podaci (Git ih nikad ne dira)
+- Baza: `ccn/deploy/data/mongo`
+- Slike: `ccn/deploy/data/media`
+- Backupi: `ccn/deploy/data/backups` (14 dana)
+- Lozinke i podešavanja: `ccn/deploy/.env` (ne dijelite ovu datoteku)
 
 ## Napomene
-- Bez Pleska skripta sama pokreće Caddy (automatski SSL). E-mailove tada treba podesiti ručno: upišite `SMTP_*` podatke u `deploy/.env` i pokrenite `docker compose up -d`.
-- Ako u Pleskom e-mailovi ne stižu: Plesk → Tools & Settings → Mail Server Settings → uključite SMTP i provjerite da port 25 nije blokiran. Kod nekih hosting firmi port 25 za izlaznu poštu treba otključati kod podrške.
-- Besplatni AI radi na procesoru servera, pa jedan prijedlog traje 20–90 sekundi. Kvalitet je dobar za sažetke i naslove, ali tekst uvijek provjerite.
+- Skripta radi na Ubuntu 20.04/22.04/24.04, Debianu 11/12 i AlmaLinux/Rocky 8/9.
+- Ako e-mailovi ne stižu: neki hosteri blokiraju izlazni port 25, pa to tražite od podrške. U Pleskom provjerite i Mail Server Settings.
+- Besplatni AI radi na procesoru servera: jedan prijedlog traje 20–90 sekundi. Tekst uvijek provjerite.
+- Bez Pleska skripta sama pokreće Caddy s automatskim SSL-om.
