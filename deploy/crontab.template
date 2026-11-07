@@ -1,0 +1,2 @@
+0 19 * * * curl -fsS -X POST -H "Authorization: Bearer __SECRET__" -H "Content-Type: application/json" -d '{}' http://backend:8001/api/cron/newsletter/daily
+0 19 * * 0 curl -fsS -X POST -H "Authorization: Bearer __SECRET__" -H "Content-Type: application/json" -d '{}' http://backend:8001/api/cron/newsletter/weekly

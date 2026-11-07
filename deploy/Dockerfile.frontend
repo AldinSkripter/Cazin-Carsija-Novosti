@@ -1,0 +1,12 @@
+FROM node:20-bullseye AS build
+WORKDIR /src
+ARG SITE_URL
+ENV REACT_APP_BACKEND_URL=${SITE_URL} GENERATE_SOURCEMAP=false CI=false NODE_OPTIONS=--max-old-space-size=3072
+COPY frontend/package.json frontend/yarn.lock ./
+RUN yarn install --frozen-lockfile --network-timeout 600000
+COPY frontend/ .
+RUN rm -f .env && yarn build
+
+FROM nginx:1.27-alpine
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /src/build /usr/share/nginx/html

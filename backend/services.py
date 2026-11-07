@@ -1,7 +1,14 @@
 import io
 import os
+import asyncio
 import logging
+import mimetypes
+import smtplib
+import ssl
+from email.message import EmailMessage
+from email.utils import formataddr
 from html import escape
+from pathlib import Path
 
 import httpx
 import requests
@@ -14,10 +21,22 @@ APP_NAME = "ccn-portal"
 STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
 STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
 _storage_key = None
+LOCAL_MEDIA = os.environ.get("STORAGE_MODE") == "local"
+
+
+def _local_path(path):
+    root = Path(os.environ["MEDIA_DIR"]).resolve()
+    p = (root / path).resolve()
+    if root not in p.parents:
+        raise ValueError("Invalid path")
+    return p
 
 
 def init_storage(force=False):
     global _storage_key
+    if LOCAL_MEDIA:
+        Path(os.environ["MEDIA_DIR"]).mkdir(parents=True, exist_ok=True)
+        return None
     if _storage_key and not force:
         return _storage_key
     r = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": os.environ["EMERGENT_LLM_KEY"]}, timeout=30)
@@ -27,6 +46,11 @@ def init_storage(force=False):
 
 
 def put_object(path, data, content_type):
+    if LOCAL_MEDIA:
+        p = _local_path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(data)
+        return {"path": path}
     for attempt in (0, 1):
         r = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": init_storage(attempt == 1), "Content-Type": content_type},
                          data=data, timeout=120)
@@ -37,6 +61,9 @@ def put_object(path, data, content_type):
 
 
 def get_object(path):
+    if LOCAL_MEDIA:
+        p = _local_path(path)
+        return p.read_bytes(), mimetypes.guess_type(p.name)[0] or "application/octet-stream"
     for attempt in (0, 1):
         r = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": init_storage(attempt == 1)}, timeout=60)
         if r.status_code == 404 and attempt == 0:
@@ -94,8 +121,44 @@ def _assert_safe_email(subject: str, html: str) -> None:
             raise ValueError("Links must be https")
 
 
+def _smtp_send(to, subject, html):
+    msg = EmailMessage()
+    msg["Subject"], msg["To"] = subject, to
+    msg["From"] = formataddr((os.environ["EMAIL_FROM_NAME"], os.environ["SMTP_FROM"]))
+    if os.environ.get("EMAIL_REPLY_TO"):
+        msg["Reply-To"] = os.environ["EMAIL_REPLY_TO"]
+    msg.set_content("Za prikaz ove poruke koristite e-mail program koji podržava HTML.")
+    msg.add_alternative(html, subtype="html")
+    ctx = ssl.create_default_context()
+    if os.environ.get("SMTP_VERIFY_TLS") == "false":
+        ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+    port = int(os.environ.get("SMTP_PORT") or 587)
+    if port == 465:
+        s = smtplib.SMTP_SSL(os.environ["SMTP_HOST"], port, context=ctx, timeout=30)
+    else:
+        s = smtplib.SMTP(os.environ["SMTP_HOST"], port, timeout=30)
+        s.ehlo()
+        if s.has_extn("starttls"):
+            s.starttls(context=ctx)
+            s.ehlo()
+    with s:
+        if os.environ.get("SMTP_USER"):
+            s.login(os.environ["SMTP_USER"], os.environ["SMTP_PASSWORD"])
+        s.send_message(msg)
+
+
 async def send_email(*, to: str, subject: str, html: str):
     _assert_safe_email(subject, html)
+    if os.environ.get("SMTP_HOST"):
+        try:
+            await asyncio.to_thread(_smtp_send, to, subject, html)
+            return True
+        except Exception as e:
+            logger.warning("SMTP failed: %s", e)
+            return False
+    if not os.environ.get("EMERGENT_EMAIL_KEY"):
+        logger.warning("No email transport configured")
+        return False
     payload = {"to": [to], "subject": subject, "html": html, "from_name": os.environ["EMAIL_FROM_NAME"]}
     if os.environ.get("EMAIL_REPLY_TO"):
         payload["contact_email"] = os.environ["EMAIL_REPLY_TO"]
@@ -124,6 +187,15 @@ AI_SYSTEM = ("Ti si urednički asistent bosanskog informativnog portala Cazin Č
 
 
 async def ai_generate(prompt: str) -> str:
+    if os.environ.get("AI_PROVIDER") == "ollama":
+        async with httpx.AsyncClient(timeout=300) as c:
+            r = await c.post(f"{os.environ['OLLAMA_URL']}/api/chat", json={
+                "model": os.environ["OLLAMA_MODEL"], "stream": False,
+                "messages": [{"role": "system", "content": AI_SYSTEM}, {"role": "user", "content": prompt}]})
+        r.raise_for_status()
+        return r.json()["message"]["content"].strip()
+    if os.environ.get("AI_PROVIDER") == "off":
+        raise RuntimeError("AI nije uključen na ovom serveru")
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     chat = LlmChat(api_key=os.environ["EMERGENT_LLM_KEY"], session_id=new_id(), system_message=AI_SYSTEM)
     chat.with_model("anthropic", "claude-sonnet-5-5")

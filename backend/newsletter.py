@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from urllib.parse import urlparse
 from datetime import timedelta
 from html import escape
@@ -11,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 async def resolve_base(request):
+    if os.environ.get("SITE_URL"):
+        return os.environ["SITE_URL"].rstrip("/")
     s = await get_settings()
     if s.get("site_url"):
         return s["site_url"].rstrip("/")

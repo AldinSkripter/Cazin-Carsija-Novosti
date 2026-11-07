@@ -442,7 +442,7 @@ async def media_file(path: str):
 
 # ---------- SEO: sitemaps, RSS, robots, share ----------
 def site_url(s, request):
-    return (s.get("site_url") or f"https://{request.headers.get('host', '')}").rstrip("/")
+    return (os.environ.get("SITE_URL") or s.get("site_url") or f"https://{request.headers.get('host', '')}").rstrip("/")
 
 
 @router.get("/sitemap.xml")

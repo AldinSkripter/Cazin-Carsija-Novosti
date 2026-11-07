@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import asyncio
 from datetime import timedelta
@@ -650,10 +651,11 @@ async def ai(action: str, body: dict, request: Request, user=Depends(require("ai
         result = await ai_generate(f"{AI_PROMPTS[action]}\n\n---\n{text}\n---")
     except Exception as e:
         raise HTTPException(502, f"AI servis nije dostupan: {str(e)[:120]}")
-    cost = round((len(text) / 4 * 3 + len(result) / 4 * 15) / 1_000_000, 5)
+    local = os.environ.get("AI_PROVIDER") == "ollama"
+    cost = 0 if local else round((len(text) / 4 * 3 + len(result) / 4 * 15) / 1_000_000, 5)
     await db.ai_usage_logs.insert_one({"id": new_id(), "user_id": user["id"], "user_name": user["name"], "action": action,
                                        "article_id": body.get("article_id"), "input_chars": len(text), "output_chars": len(result),
-                                       "est_cost_usd": cost, "model": "claude-sonnet-5-5", "created_at": iso()})
+                                       "est_cost_usd": cost, "model": os.environ["OLLAMA_MODEL"] if local else "claude-sonnet-5-5", "created_at": iso()})
     return {"result": result.strip(), "notice": "AI prijedlog – obavezno provjerite prije korištenja."}
 
 

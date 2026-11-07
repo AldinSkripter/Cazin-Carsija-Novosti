@@ -1,0 +1,10 @@
+**/node_modules
+frontend/build
+deploy/data
+deploy/.env
+.git
+.emergent
+memory
+test_reports
+tests
+**/__pycache__
