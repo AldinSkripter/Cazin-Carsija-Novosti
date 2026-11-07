@@ -13,7 +13,7 @@ export function SectionTitle({ title, to, dark, color = "#D4A52C" }) {
       <h2 className={`font-serif-news text-[22px] md:text-[26px] font-black whitespace-nowrap flex items-center gap-3 ${dark ? "text-white" : "text-ccn-navy"}`}>
         <span className="w-1.5 h-7 rounded-full" style={{ background: color }} />{title}
       </h2>
-      <span className={`flex-1 h-px ${dark ? "bg-white/15" : "bg-ccn-navy/15"}`} />
+      <span className={`ccn-hairline flex-1 h-px ${dark ? "bg-white/15" : "bg-ccn-navy/15"}`} />
       {to && (
         <Link to={to} className={`group text-[13px] font-bold uppercase tracking-wider flex items-center gap-1 whitespace-nowrap ${dark ? "text-ccn-teal" : "text-ccn-tealdark"}`}>
           Sve <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

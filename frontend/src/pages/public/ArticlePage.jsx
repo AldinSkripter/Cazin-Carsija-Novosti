@@ -49,7 +49,7 @@ export default function ArticlePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 grid lg:grid-cols-12 gap-10">
       <div className="lg:col-span-8"><ArticleView a={a} /></div>
-      <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-32 self-start">
+      <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-[180px] self-start">
         <AdSlot position="sidebar" />
         <MostRead />
       </aside>

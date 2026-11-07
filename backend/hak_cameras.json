@@ -1,0 +1,695 @@
+[
+{
+"crossing": "Bregana",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Ulaz u HR iz SLO",
+"id": "6",
+"refresh": 15,
+"k": "3"
+},
+{
+"crossing": "Bregana",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Izlaz iz HR u SLO",
+"id": "7",
+"refresh": 10,
+"k": "3"
+},
+{
+"crossing": "Macelj",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Ulaz u HR iz SLO",
+"id": "34",
+"refresh": 10,
+"k": "16"
+},
+{
+"crossing": "Macelj",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Izlaz iz HR u SLO",
+"id": "35",
+"refresh": 10,
+"k": "16"
+},
+{
+"crossing": "Pasjak",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Ulaz u HR iz SLO",
+"id": "40",
+"refresh": 15,
+"k": "21"
+},
+{
+"crossing": "Pasjak",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Izlaz iz HR u SLO",
+"id": "41",
+"refresh": 10,
+"k": "21"
+},
+{
+"crossing": "Rupa",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Ulaz u HR iz SLO",
+"id": "52",
+"refresh": 10,
+"k": "28"
+},
+{
+"crossing": "Rupa",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Izlaz iz HR u SLO",
+"id": "53",
+"refresh": 10,
+"k": "28"
+},
+{
+"crossing": "Kaštel",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Ulaz u HR iz SLO",
+"id": "26",
+"refresh": 20,
+"k": "13"
+},
+{
+"crossing": "Kaštel",
+"side": "HR strana",
+"group": "Granica sa Slovenijom",
+"label": "Izlaz iz HR u SLO",
+"id": "27",
+"refresh": 20,
+"k": "13"
+},
+{
+"crossing": "Batina",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Izlaz iz HR u SRB",
+"id": "1017",
+"refresh": 10,
+"k": "301"
+},
+{
+"crossing": "Batina",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Ulaz u HR iz SRB",
+"id": "1018",
+"refresh": 10,
+"k": "301"
+},
+{
+"crossing": "Erdut",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Izlaz iz HR u SRB",
+"id": "415",
+"refresh": 12,
+"k": "197"
+},
+{
+"crossing": "Erdut",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Ulaz u HR iz SRB",
+"id": "416",
+"refresh": 12,
+"k": "197"
+},
+{
+"crossing": "Ilok",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Izlaz iz HR u SRB",
+"id": "417",
+"refresh": 10,
+"k": "200"
+},
+{
+"crossing": "Ilok",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Ulaz u HR iz SRB",
+"id": "418",
+"refresh": 15,
+"k": "200"
+},
+{
+"crossing": "Tovarnik",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Izlaz iz HR u SRB",
+"id": "419",
+"refresh": 10,
+"k": "196"
+},
+{
+"crossing": "Tovarnik",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Ulaz u HR iz SRB",
+"id": "420",
+"refresh": 10,
+"k": "196"
+},
+{
+"crossing": "Bajakovo",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Ulaz u HR iz SRB",
+"id": "2",
+"refresh": 10,
+"k": "1"
+},
+{
+"crossing": "Bajakovo",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Izlaz iz HR u SRB",
+"id": "1",
+"refresh": 15,
+"k": "1"
+},
+{
+"crossing": "Bajakovo",
+"side": "HR strana",
+"group": "Granica sa Srbijom",
+"label": "Izlaz iz HR u SRB",
+"id": "3",
+"refresh": 10,
+"k": "1"
+},
+{
+"crossing": "Gunja",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "431",
+"refresh": 15,
+"k": "206"
+},
+{
+"crossing": "Gunja",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "432",
+"refresh": 10,
+"k": "206"
+},
+{
+"crossing": "Županja",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "79",
+"refresh": 10,
+"k": "44"
+},
+{
+"crossing": "Županja",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "80",
+"refresh": 10,
+"k": "44"
+},
+{
+"crossing": "Orašje",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "401",
+"refresh": 20,
+"k": "183"
+},
+{
+"crossing": "Slavonski Šamac",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "1015",
+"refresh": 60,
+"k": "300"
+},
+{
+"crossing": "Slavonski Šamac",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "1016",
+"refresh": 60,
+"k": "300"
+},
+{
+"crossing": "Svilaj.",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "461",
+"refresh": 10,
+"k": "211"
+},
+{
+"crossing": "Svilaj.",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "462",
+"refresh": 10,
+"k": "211"
+},
+{
+"crossing": "Svilaj.",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "463",
+"refresh": 10,
+"k": "211"
+},
+{
+"crossing": "Slavonski Brod",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "195",
+"refresh": 10,
+"k": "140"
+},
+{
+"crossing": "Slavonski Brod",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "196",
+"refresh": 10,
+"k": "140"
+},
+{
+"crossing": "Bosanski Brod",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "402",
+"refresh": 20,
+"k": "184"
+},
+{
+"crossing": "Bosanski Brod",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "403",
+"refresh": 20,
+"k": "184"
+},
+{
+"crossing": "Stara Gradiška",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "60",
+"refresh": 12,
+"k": "32"
+},
+{
+"crossing": "Stara Gradiška",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "59",
+"refresh": 15,
+"k": "32"
+},
+{
+"crossing": "Bosanska Gradiška",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "404",
+"refresh": 20,
+"k": "185"
+},
+{
+"crossing": "Bosanska Gradiška",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "405",
+"refresh": 20,
+"k": "185"
+},
+{
+"crossing": "Gornji Varoš",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "1021",
+"refresh": 10,
+"k": "303"
+},
+{
+"crossing": "Gornji Varoš",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "1022",
+"refresh": 10,
+"k": "303"
+},
+{
+"crossing": "Hrvatska Kostajnica",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "1019",
+"refresh": 10,
+"k": "302"
+},
+{
+"crossing": "Hrvatska Kostajnica",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "1020",
+"refresh": 10,
+"k": "302"
+},
+{
+"crossing": "Maljevac",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "429",
+"refresh": 10,
+"k": "177"
+},
+{
+"crossing": "Maljevac",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "430",
+"refresh": 10,
+"k": "177"
+},
+{
+"crossing": "Maljevac",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Velika Kladuša",
+"id": "406",
+"refresh": 20,
+"k": "177"
+},
+{
+"crossing": "Izačić",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "407",
+"refresh": 20,
+"k": "179"
+},
+{
+"crossing": "Kamensko",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "317",
+"refresh": 10,
+"k": "192"
+},
+{
+"crossing": "Kamensko",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "318",
+"refresh": 10,
+"k": "192"
+},
+{
+"crossing": "Kamensko",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "408",
+"refresh": 20,
+"k": "192"
+},
+{
+"crossing": "Prisika",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "409",
+"refresh": 20,
+"k": "180"
+},
+{
+"crossing": "Aržano",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "315",
+"refresh": 15,
+"k": "193"
+},
+{
+"crossing": "Aržano",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "316",
+"refresh": 10,
+"k": "193"
+},
+{
+"crossing": "Vinjani Gornji",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "994",
+"refresh": 10,
+"k": "282"
+},
+{
+"crossing": "Vinjani Gornji",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "995",
+"refresh": 10,
+"k": "282"
+},
+{
+"crossing": "Vinjani Donji",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "302",
+"refresh": 10,
+"k": "39"
+},
+{
+"crossing": "Vinjani Donji",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "303",
+"refresh": 10,
+"k": "39"
+},
+{
+"crossing": "Crveni Grm",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "410",
+"refresh": 20,
+"k": "181"
+},
+{
+"crossing": "Nova Sela/Bijača",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "201",
+"refresh": 10,
+"k": "137"
+},
+{
+"crossing": "Nova Sela/Bijača",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "202",
+"refresh": 10,
+"k": "137"
+},
+{
+"crossing": "Nova Sela/Bijača",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "411",
+"refresh": 20,
+"k": "137"
+},
+{
+"crossing": "Metković",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "321",
+"refresh": 10,
+"k": "136"
+},
+{
+"crossing": "Metković",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "320",
+"refresh": 10,
+"k": "136"
+},
+{
+"crossing": "Metković",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "319",
+"refresh": 15,
+"k": "136"
+},
+{
+"crossing": "Metković",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "412",
+"refresh": 20,
+"k": "136"
+},
+{
+"crossing": "Klek/Neum1",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "203",
+"refresh": 10,
+"k": "138"
+},
+{
+"crossing": "Klek/Neum1",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "204",
+"refresh": 10,
+"k": "138"
+},
+{
+"crossing": "Klek/Neum1",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "413",
+"refresh": 20,
+"k": "138"
+},
+{
+"crossing": "Zaton Doli/Neum2",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "206",
+"refresh": 15,
+"k": "139"
+},
+{
+"crossing": "Zaton Doli/Neum2",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "207",
+"refresh": 10,
+"k": "139"
+},
+{
+"crossing": "Ivanica",
+"side": "BiH strana",
+"group": "Granica BiH – Hrvatska",
+"label": "",
+"id": "414",
+"refresh": 20,
+"k": "182"
+},
+{
+"crossing": "Brgat",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Izlaz iz HR u BiH",
+"id": "453",
+"refresh": 10,
+"k": "208"
+},
+{
+"crossing": "Brgat",
+"side": "HR strana",
+"group": "Granica BiH – Hrvatska",
+"label": "Ulaz u HR iz BiH",
+"id": "454",
+"refresh": 15,
+"k": "208"
+},
+{
+"crossing": "Karasovići",
+"side": "HR strana",
+"group": "Granica sa Crnom Gorom",
+"label": "Ulaz u HR iz CG",
+"id": "197",
+"refresh": 10,
+"k": "141"
+},
+{
+"crossing": "Karasovići",
+"side": "HR strana",
+"group": "Granica sa Crnom Gorom",
+"label": "Izlaz iz HR u CG",
+"id": "198",
+"refresh": 10,
+"k": "141"
+},
+{
+"crossing": "Vitaljina",
+"side": "HR strana",
+"group": "Granica sa Crnom Gorom",
+"label": "Ulaz u HR iz CG",
+"id": "455",
+"refresh": 12,
+"k": "209"
+},
+{
+"crossing": "Vitaljina",
+"side": "HR strana",
+"group": "Granica sa Crnom Gorom",
+"label": "Izlaz iz HR u CG",
+"id": "456",
+"refresh": 12,
+"k": "209"
+}
+]

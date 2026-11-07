@@ -109,7 +109,7 @@ crud("pages", "pages", "pages.manage", {"title": "str", "slug": "str", "content"
      "published": "bool"}, sort=("title", 1), hook=page_hook)
 crud("redirects", "redirects", "settings.manage", {"from_path": "str", "to_path": "str", "code": "int"}, sort=("created_at", -1))
 crud("cameras", "cameras", "cameras.manage", {"name": "str", "location": "str", "image_url": "str", "page_url": "str", "refresh_seconds": "int",
-     "order": "int", "active": "bool", "description": "str"}, hook=cam_hook)
+     "order": "int", "active": "bool", "description": "str", "group": "str"}, hook=cam_hook)
 
 
 # ---------- Dashboard & analytics ----------

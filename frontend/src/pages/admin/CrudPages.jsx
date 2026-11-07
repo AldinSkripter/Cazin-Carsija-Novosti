@@ -151,8 +151,8 @@ export const PagesAdmin = () => (
 
 export const Cameras = () => (
   <CrudPage title="Live kamere" sub="Kamere sa graničnih prijelaza – slika se dohvaća preko servera i automatski osvježava" endpoint="cameras" testid="cameras" defaults={{ active: true, refresh_seconds: 60, order: 10 }}
-    columns={[{ key: "name", label: "Naziv" }, { key: "location", label: "Lokacija" }, { key: "refresh_seconds", label: "Osvježavanje (s)" }, { key: "active", label: "Aktivna" }, { key: "order", label: "Redoslijed" }]}
-    fields={[{ key: "name", label: "Naziv (npr. GP Maljevac)" }, { key: "location", label: "Lokacija" }, { key: "image_url", label: "URL slike kamere (JPG snapshot)", help: "HAK primjer: https://m.hak.hr/cam.asp?id=429" },
+    columns={[{ key: "name", label: "Naziv" }, { key: "group", label: "Grupa" }, { key: "location", label: "Lokacija" }, { key: "refresh_seconds", label: "Osvježavanje (s)" }, { key: "active", label: "Aktivna" }, { key: "order", label: "Redoslijed" }]}
+    fields={[{ key: "name", label: "Naziv (npr. GP Maljevac – Ulaz u HR iz BiH)" }, { key: "location", label: "Lokacija" }, { key: "group", label: "Grupa", type: "select", options: ["Granica BiH – Hrvatska", "Granica sa Slovenijom", "Granica sa Srbijom", "Granica sa Crnom Gorom", "Ostalo"].map((g) => [g, g]) }, { key: "image_url", label: "URL slike kamere (JPG snapshot)", help: "HAK primjer: https://m.hak.hr/cam.asp?id=429" },
       { key: "page_url", label: "Izvorna stranica kamere" }, { key: "description", label: "Opis / izvor" }, { key: "refresh_seconds", label: "Osvježavanje (sekundi, min 15)", type: "number" }, { key: "order", label: "Redoslijed", type: "number" }, { key: "active", label: "Aktivna", type: "bool" }]} />
 );
 

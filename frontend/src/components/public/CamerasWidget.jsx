@@ -15,13 +15,17 @@ export function CamerasWidget({ title = "Kamere uživo sa granica", compact = fa
   const [cams, setCams] = useState([]);
   const [tick, setTick] = useState(Math.floor(Date.now() / 60000));
   const [open, setOpen] = useState(null);
+  const [group, setGroup] = useState("");
+  const [q, setQ] = useState("");
   useEffect(() => {
     api.get("/public/cameras").then((r) => setCams(r.data)).catch(() => {});
     const t = setInterval(() => setTick(Math.floor(Date.now() / 30000)), 30000);
     return () => clearInterval(t);
   }, []);
   if (!cams.length) return null;
-  const shown = compact ? cams.slice(0, 4) : cams;
+  const groups = [...new Set(cams.map((c) => c.group || "Ostalo"))];
+  const ql = q.toLowerCase();
+  const shown = compact ? cams.slice(0, 4) : cams.filter((c) => (!group || (c.group || "Ostalo") === group) && (!ql || `${c.name} ${c.location}`.toLowerCase().includes(ql)));
   return (
     <section className="relative bg-ccn-navy rounded-xl p-6 md:p-8 text-white overflow-hidden grain" data-testid="cameras-widget">
       <div className="flex items-center justify-between mb-5">
@@ -31,7 +35,19 @@ export function CamerasWidget({ title = "Kamere uživo sa granica", compact = fa
         </h2>
         {compact && <Link to="/kamere" className="text-sm text-ccn-teal hover:underline" data-testid="cameras-all-link">Sve kamere →</Link>}
       </div>
-      <div className={`grid gap-4 ${compact ? "grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+      {!compact && (
+        <div className="flex flex-wrap gap-2 mb-6" data-testid="cameras-filters">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Traži prijelaz (npr. Maljevac)…" aria-label="Traži kameru" data-testid="cameras-search"
+            className="rounded-full px-4 py-2 text-sm bg-white/10 border border-white/20 text-white placeholder-white/50 w-full sm:w-64" />
+          {["", ...groups].map((g) => (
+            <button key={g || "all"} onClick={() => setGroup(g)} data-testid={`cameras-group-${g || "all"}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${group === g ? "bg-ccn-teal text-ccn-navy" : "bg-white/10 hover:bg-white/20"}`}>
+              {g || `Sve (${cams.length})`}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className={`grid gap-4 ${compact ? "grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {shown.map((c) => (
           <button key={c.id} onClick={() => setOpen(c)} className="text-left group" data-testid={`camera-${c.id}`}>
             <div className="relative aspect-video overflow-hidden rounded-md bg-ccn-navy2 ring-1 ring-white/10 group-hover:ring-ccn-teal transition-all">
@@ -39,7 +55,7 @@ export function CamerasWidget({ title = "Kamere uživo sa granica", compact = fa
               <span className="absolute top-2 left-2 bg-ccn-red text-[10px] font-bold px-1.5 py-0.5 rounded-sm uppercase">Uživo</span>
             </div>
             <p className="mt-2 text-sm font-semibold group-hover:text-ccn-teal transition-colors">{c.name}</p>
-            <p className="text-xs text-white/50">{c.location}</p>
+            <p className="text-xs text-white/50">{c.location}{!compact && c.group ? ` · ${c.group}` : ""}</p>
           </button>
         ))}
       </div>

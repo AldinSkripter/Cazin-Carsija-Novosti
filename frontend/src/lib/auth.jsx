@@ -34,11 +34,13 @@ export const useAuth = () => useContext(AuthCtx);
 export function SiteProvider({ children }) {
   const [site, setSite] = useState({ site_name: "Cazin Čaršija Novosti" });
   const [cats, setCats] = useState([]);
+  const [theme, setThemeState] = useState(() => localStorage.getItem("ccn_theme") || (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  const setTheme = (t) => { localStorage.setItem("ccn_theme", t); setThemeState(t); };
   useEffect(() => {
     api.get("/public/settings").then((r) => setSite(r.data)).catch(() => {});
     api.get("/public/categories").then((r) => setCats(r.data)).catch(() => {});
   }, []);
-  return <SiteCtx.Provider value={{ site, cats }}>{children}</SiteCtx.Provider>;
+  return <SiteCtx.Provider value={{ site, cats, theme, setTheme }}>{children}</SiteCtx.Provider>;
 }
 
 export const useSite = () => useContext(SiteCtx);

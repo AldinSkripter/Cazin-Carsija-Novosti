@@ -14,13 +14,14 @@ export function BreakingTicker() {
   if (!items.length) return null;
   const list = [...items, ...items];
   return (
-    <div className="bg-ccn-red text-white" data-testid="breaking-ticker" role="region" aria-label="Hitne vijesti">
-      <div className="max-w-7xl mx-auto flex items-center">
-        <span className="shrink-0 flex items-center gap-1.5 bg-[#B30E21] px-3 md:px-5 py-2.5 text-xs font-extrabold uppercase tracking-[0.2em]">
-          <Zap className="w-4 h-4 text-ccn-gold animate-pulse" /> Hitno
+    <div className="bg-ccn-red text-white border-t border-black/10" data-testid="breaking-ticker" role="region" aria-label="Hitne vijesti">
+      <div className="max-w-7xl mx-auto px-4 flex items-stretch h-10">
+        <span className="relative z-10 shrink-0 flex items-center gap-1.5 bg-[#A50D1F] pl-3 pr-4 text-[11px] font-extrabold uppercase tracking-[0.2em] -ml-4 sm:ml-0"
+          style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)", paddingRight: "1.4rem" }}>
+          <Zap className="w-4 h-4 text-ccn-gold" /> Hitno
         </span>
-        <div className="ticker-wrap overflow-hidden flex-1 py-2.5" style={{ maskImage: "linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent)" }}>
-          <div className="ticker-track pl-6">
+        <div className="ticker-wrap relative overflow-hidden flex-1 flex items-center">
+          <div className="ticker-track pl-5">
             {list.map((b, i) => {
               const to = b.article_slug ? `/vijesti/${b.article_slug}` : b.url;
               const text = <span className="font-semibold text-sm flex items-center gap-3"><span className="w-1.5 h-1.5 rounded-full bg-white/70" />{b.title}</span>;
@@ -29,6 +30,7 @@ export function BreakingTicker() {
               ) : <span key={i}>{text}</span>;
             })}
           </div>
+          <span className="pointer-events-none absolute right-0 inset-y-0 w-10 bg-gradient-to-l from-ccn-red to-transparent" />
         </div>
       </div>
     </div>

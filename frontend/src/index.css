@@ -94,6 +94,26 @@ body {
 .ProseMirror td, .ProseMirror th { border: 1px solid #cbd5e1; padding: 6px; min-width: 60px; }
 .ProseMirror .selectedCell { background: #e0f7f5; }
 
+/* ---------- Tamni način (javni portal) ---------- */
+.theme-dark { background-color: #061224; color: #E3EAF3; }
+.theme-dark .bg-white { background-color: #0D2140 !important; }
+.theme-dark .border-ccn-mist, .theme-dark .border-slate-300, .theme-dark .border { border-color: rgba(255,255,255,0.09) !important; }
+.theme-dark [class*="bg-ccn-mist"] { background-color: rgba(255,255,255,0.06) !important; }
+.theme-dark .text-ccn-navy:not(.bg-ccn-gold):not(.bg-ccn-teal):not(.bg-white) { color: #F1F5F9; }
+.theme-dark .bg-ccn-gold, .theme-dark .bg-ccn-teal { color: #0B1F3B; }
+.theme-dark .text-slate-500, .theme-dark .text-slate-400 { color: #8FA3BC !important; }
+.theme-dark .text-slate-600, .theme-dark .text-slate-700 { color: #B6C4D6 !important; }
+.theme-dark .text-ccn-tealdark { color: var(--teal) !important; }
+.theme-dark .news-card:hover .news-title { color: var(--teal); }
+.theme-dark .bg-ccn-navy:not(footer *) { background-color: #0A1A33; }
+.theme-dark .article-body { color: #D6DFEA; }
+.theme-dark .article-body h2, .theme-dark .article-body h3, .theme-dark .article-body blockquote { color: #FFFFFF; }
+.theme-dark .article-body th { background: rgba(255,255,255,0.06); }
+.theme-dark .article-body a { color: var(--teal); }
+.theme-dark .drop-cap > p:first-of-type::first-letter { color: var(--gold); }
+.theme-dark main input:not([type="checkbox"]), .theme-dark main textarea, .theme-dark main select { background-color: #081A33; color: #E3EAF3; border-color: rgba(255,255,255,0.15); }
+.theme-dark .ccn-hairline { background-color: rgba(255,255,255,0.12) !important; }
+
 .skip-link { position: absolute; left: -999px; top: 0; }
 .skip-link:focus { left: 8px; top: 8px; z-index: 100; background: var(--gold); color: var(--navy); padding: 8px 12px; }
 :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }

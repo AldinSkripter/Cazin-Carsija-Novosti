@@ -1,14 +1,13 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Header, HeaderAds } from "./Header";
-import { BreakingTicker } from "./BreakingTicker";
 import { Footer, CookieBanner } from "./Footer";
 import { useSite } from "../../lib/auth";
 import { trackView } from "../../lib/seo";
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
-  const { site } = useSite();
+  const { site, theme } = useSite();
   useEffect(() => {
     window.scrollTo(0, 0);
     if (!pathname.startsWith("/vijesti/")) trackView(null);
@@ -22,9 +21,8 @@ export default function PublicLayout() {
     );
   }
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col transition-colors duration-300 ${theme === "dark" ? "theme-dark" : ""}`} data-testid="public-root" data-theme={theme}>
       <Header />
-      <BreakingTicker />
       <HeaderAds />
       <main id="main" className="flex-1">
         <Outlet />

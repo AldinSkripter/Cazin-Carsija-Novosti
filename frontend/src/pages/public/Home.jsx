@@ -36,7 +36,7 @@ export default function Home() {
       {hero.map((b) => <HomeBlock key={b.id} b={b} />)}
       <div className="grid lg:grid-cols-12 gap-10 mt-12">
         <div className="lg:col-span-8 space-y-14">{top.map((b) => <HomeBlock key={b.id} b={b} />)}</div>
-        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-36 self-start">
+        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-[180px] self-start">
           <MostRead />
           <WeatherWidget />
           <AdSlot position="sidebar" />

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Search, Menu, Facebook, Instagram, Youtube, PenLine, Video } from "lucide-react";
+import { Search, Menu, Facebook, Instagram, Youtube, PenLine, Video, Moon, Sun } from "lucide-react";
 import { useSite } from "../../lib/auth";
 import { fmtDate, WEEKDAYS } from "../../lib/api";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { useWeather, wx } from "./WeatherWidget";
 import { AdSlot } from "./AdSlot";
+import { BreakingTicker } from "./BreakingTicker";
 
 function SearchBox({ onDone, id, dark = true }) {
   const [q, setQ] = useState("");
@@ -25,6 +26,19 @@ function SearchBox({ onDone, id, dark = true }) {
   );
 }
 
+export function ThemeToggle({ big = false }) {
+  const { theme, setTheme } = useSite();
+  const dark = theme === "dark";
+  return (
+    <button onClick={() => setTheme(dark ? "light" : "dark")} aria-label={dark ? "Svijetli način" : "Tamni način"} aria-pressed={dark}
+      data-testid={big ? "theme-toggle-mobile" : "theme-toggle"}
+      className={`flex items-center gap-1.5 rounded-full transition-colors ${big ? "w-full justify-center py-3 mt-3 border border-white/20 font-semibold" : "px-2.5 py-1 bg-white/[0.07] hover:bg-white/15 text-white/80"}`}>
+      {dark ? <Sun className="w-3.5 h-3.5 text-ccn-gold" /> : <Moon className="w-3.5 h-3.5" />}
+      <span className={big ? "" : "hidden sm:inline"}>{dark ? "Svijetli način" : "Tamni način"}</span>
+    </button>
+  );
+}
+
 function TopBar({ site }) {
   const w = useWeather();
   const d = new Date();
@@ -41,6 +55,7 @@ function TopBar({ site }) {
             Granice uživo
           </Link>
           {socials.map(([k, I]) => <a key={k} href={s[k]} aria-label={k} target="_blank" rel="noopener noreferrer" className="hover:text-ccn-teal"><I className="w-3.5 h-3.5" /></a>)}
+          <ThemeToggle />
         </div>
       </div>
     </div>
@@ -76,6 +91,7 @@ export function Header() {
                   <Link key={m.url} to={m.url} onClick={() => setOpen(false)} className="py-3 border-b border-white/10 font-semibold hover:text-ccn-teal hover:pl-1 transition-all">{m.label}</Link>
                 ))}
                 <Link to="/prijavite-vijest" onClick={() => setOpen(false)} className="mt-5 bg-ccn-gold text-ccn-navy text-center font-bold py-3 rounded-full">Prijavite vijest</Link>
+                <ThemeToggle big />
               </nav>
             </SheetContent>
           </Sheet>
@@ -106,6 +122,7 @@ export function Header() {
             </Link>
           </div>
         </nav>
+        <BreakingTicker />
       </header>
     </>
   );

@@ -120,9 +120,36 @@ async def seed_all():
         blocks = [{**b, "id": new_id(), "order": i, "visible": True, "limit": b.get("limit", 6), "dedupe": True} for i, b in enumerate(HOME_BLOCKS)]
         await db.settings.insert_one({"key": "homepage", "value": {"draft": blocks, "published": blocks}})
 
+    if not await db.settings.find_one({"key": "hak_synced_v1"}):
+        await sync_hak_cameras()
+        await db.settings.insert_one({"key": "hak_synced_v1", "value": True})
+
     if not await db.articles.count_documents({}) and not await db.settings.find_one({"key": "demo_seeded"}):
         await db.settings.insert_one({"key": "demo_seeded", "value": True})
         asyncio.create_task(seed_demo_articles(admin["id"]))
+
+
+PRIORITY = ["Maljevac", "Izačić", "Hrvatska Kostajnica", "Gornji Varoš", "Stara Gradiška", "Bosanska Gradiška", "Kamensko", "Prisika"]
+
+
+async def sync_hak_cameras():
+    """Adds every HAK border-crossing camera (scraped list in hak_cameras.json) that is not in the DB yet."""
+    import json
+    from pathlib import Path
+    data = json.loads((Path(__file__).parent / "hak_cameras.json").read_text(encoding="utf-8"))
+    data.sort(key=lambda c: (PRIORITY.index(c["crossing"]) if c["crossing"] in PRIORITY else 99))
+    seen = {}
+    for i, c in enumerate(data):
+        crossing = c["crossing"].rstrip(".")
+        label = c["label"] or ("Pogled na prijelaz (BiH strana)" if c["side"] == "BiH strana" else "Pogled na prijelaz")
+        key = f"{crossing}|{label}"
+        seen[key] = seen.get(key, 0) + 1
+        name = f"GP {crossing} – {label}" + (f" ({seen[key]})" if seen[key] > 1 else "")
+        url = f"https://m.hak.hr/cam.asp?id={c['id']}"
+        fields = {"name": name, "location": f"{crossing} · {c['side']}", "group": c["group"], "order": i,
+                  "page_url": f"https://m.hak.hr/kamera.asp?g=2&k={c['k']}", "description": "Izvor: HAK (Hrvatski autoklub)"}
+        await db.cameras.update_one({"image_url": url}, {"$set": fields, "$setOnInsert": {
+            "id": new_id(), "image_url": url, "refresh_seconds": max(int(c.get("refresh") or 60), 30), "active": True, "created_at": iso()}}, upsert=True)
 
 
 def _fetch(url):
