@@ -10,7 +10,8 @@ from core import (db, new_id, iso, now, slugify, sanitize_html, strip_tags, requ
                   get_current_user, hash_pw, get_settings, fold)
 from routes_auth import check_pw_policy
 from services import process_image, ai_generate
-from newsletter import build_campaign, start_send, base_url
+from newsletter import build_campaign, start_send, resolve_base, render_email
+from services import send_email
 
 router = APIRouter(prefix="/api/admin")
 COERCE = {"str": lambda v: str(v or "").strip(), "int": lambda v: int(v or 0), "bool": bool, "list": lambda v: list(v or []),
@@ -411,10 +412,40 @@ async def send_camp(cid: str, request: Request, user=Depends(require("newsletter
         raise HTTPException(400, "Kampanja nema vijesti")
     if not await db.newsletter_subscribers.count_documents({"status": "confirmed"}):
         raise HTTPException(400, "Nema potvrđenih pretplatnika")
-    if not await start_send(cid, base_url(await get_settings(), request)):
+    if not await start_send(cid, await resolve_base(request)):
         raise HTTPException(409, "Kampanja je već poslana ili se šalje")
     await audit(user, "newsletter.campaign_send", "campaign", cid, camp["subject"])
     return {"ok": True}
+
+
+@router.put("/newsletter/campaigns/{cid}")
+async def edit_camp(cid: str, body: dict, user=Depends(require("newsletter.manage"))):
+    upd = {"subject": str(body.get("subject") or "").strip()[:200], "intro": strip_tags(str(body.get("intro") or ""))[:2000]}
+    if not upd["subject"]:
+        raise HTTPException(400, "Naslov je obavezan")
+    r = await db.newsletter_campaigns.update_one({"id": cid, "status": {"$in": ["draft", "failed"]}}, {"$set": upd})
+    if not r.matched_count:
+        raise HTTPException(409, "Poslana kampanja se ne može mijenjati")
+    return {"ok": True}
+
+
+@router.get("/newsletter/campaigns/{cid}/preview")
+async def preview_camp(cid: str, request: Request, user=Depends(require("newsletter.manage"))):
+    camp = await db.newsletter_campaigns.find_one({"id": cid}, {"_id": 0})
+    if not camp:
+        raise HTTPException(404, "Kampanja ne postoji")
+    return {"html": await render_email(camp, await resolve_base(request), "pregled")}
+
+
+@router.post("/newsletter/campaigns/{cid}/test")
+async def test_camp(cid: str, request: Request, user=Depends(require("newsletter.manage"))):
+    camp = await db.newsletter_campaigns.find_one({"id": cid}, {"_id": 0})
+    if not camp:
+        raise HTTPException(404, "Kampanja ne postoji")
+    html = await render_email(camp, await resolve_base(request), "proba")
+    if not await send_email(to=user["email"], subject=f"[PROBA] {camp['subject']}", html=html):
+        raise HTTPException(502, "Slanje probnog e-maila nije uspjelo")
+    return {"ok": True, "email": user["email"]}
 
 
 @router.delete("/newsletter/campaigns/{cid}")

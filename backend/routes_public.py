@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from core import db, new_id, iso, now, fold, get_settings, client_ip, rate_limit, strip_tags, secret, JWT_ALG, permissions_for
 from articles_common import query_articles, enrich, publish_due, public_filter, CARD
 from services import get_object, process_image, put_object, APP_NAME, send_email, email_template
-from newsletter import auto_digest, base_url
+from newsletter import auto_digest, resolve_base
 
 router = APIRouter(prefix="/api")
 PUBLIC_SETTINGS = ["site_name", "tagline", "logo_url", "logo_mobile_url", "favicon_url", "social_image", "contact_email", "phone",
@@ -361,7 +361,7 @@ async def cron_newsletter(kind: str, request: Request):
         await db.cron_runs.insert_one({"_id": f"nl:{run_id}", "kind": kind, "at": iso()})
     except Exception:
         return {"ok": True, "duplicate": True}
-    asyncio.create_task(auto_digest(kind, base_url(await get_settings(), request)))
+    asyncio.create_task(auto_digest(kind, await resolve_base(request)))
     return {"ok": True}
 
 
