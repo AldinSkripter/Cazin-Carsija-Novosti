@@ -77,7 +77,7 @@ export function Header() {
       <a href="#main" className="skip-link">Preskoči na sadržaj</a>
       <TopBar site={site} />
       <header className="sticky top-0 z-40 bg-ccn-navy shadow-[0_6px_24px_-12px_rgba(0,0,0,0.6)]">
-        <div className={`max-w-7xl mx-auto px-4 flex items-center gap-5 transition-all duration-300 ${scrolled ? "py-1.5" : "py-3 md:py-4"}`}>
+        <div className={`relative max-w-7xl mx-auto px-4 flex items-center gap-5 transition-all duration-300 ${scrolled ? "py-1.5" : "py-3 md:py-4"}`}>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button className="lg:hidden text-white p-1 -ml-1" aria-label="Meni" data-testid="mobile-menu-button"><Menu className="w-6 h-6" /></button>
@@ -95,7 +95,7 @@ export function Header() {
               </nav>
             </SheetContent>
           </Sheet>
-          <Link to="/" className="shrink-0" data-testid="header-logo">
+          <Link to="/" className="shrink-0 absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0" data-testid="header-logo">
             <img src={site.logo_url || "/logo-web.webp"} alt={site.site_name} width="216" height="72"
               className={`w-auto transition-all duration-300 ${scrolled ? "h-10 md:h-12" : "h-12 md:h-[72px]"}`} />
           </Link>
