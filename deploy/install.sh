@@ -149,15 +149,27 @@ EOF
     || plesk bin subscription --update-web-server-settings "$DOMAIN" -additional-nginx-settings-file "$NG" >/dev/null 2>&1; then
     ok "Nginx u Plesku preusmjeren na portal"
   else
-    cp "$NG" "$D/plesk-nginx.conf"
-    warn "Nginx nije automatski podešen. U Plesku: $DOMAIN → Apache & nginx Settings → Additional nginx directives → zalijepite sadržaj $D/plesk-nginx.conf"
+    VC="/var/www/vhosts/system/$DOMAIN/conf/vhost_nginx.conf"
+    if [ -d "$(dirname "$VC")" ]; then
+      cp "$NG" "$VC"
+      if plesk sbin httpdmng --reconfigure-domain "$DOMAIN" >/tmp/ccn-nginx.log 2>&1 && nginx -t >/dev/null 2>&1; then
+        ok "Nginx u Plesku preusmjeren na portal"
+      else
+        rm -f "$VC"; plesk sbin httpdmng --reconfigure-domain "$DOMAIN" >/dev/null 2>&1 || true
+        cp "$NG" "$D/plesk-nginx.conf"
+        warn "Nginx nije automatski podešen ($(tail -n 2 /tmp/ccn-nginx.log | tr '\n' ' ')). U Plesku: $DOMAIN → Apache & nginx Settings → Additional nginx directives → zalijepite sadržaj $D/plesk-nginx.conf"
+      fi
+    else
+      cp "$NG" "$D/plesk-nginx.conf"
+      warn "Nginx nije automatski podešen. U Plesku: $DOMAIN → Apache & nginx Settings → Additional nginx directives → zalijepite sadržaj $D/plesk-nginx.conf"
+    fi
   fi
   rm -f "$NG"
 fi
 
 # ---------- 6. Pokretanje ----------
 say "Gradim i pokrećem portal (prvi put 5–10 min)…"
-docker compose up -d --build 2>&1 | grep -E "Built|Started|Error|error" || true
+docker compose up -d --build >"$D/install.log" 2>&1 || { tail -n 40 "$D/install.log"; die "Gradnja nije uspjela – cijeli log: $D/install.log"; }
 for i in $(seq 1 90); do curl -fs "http://127.0.0.1:$APP_PORT/api/health" >/dev/null 2>&1 && break; sleep 3; done
 curl -fs "http://127.0.0.1:$APP_PORT/api/health" >/dev/null || { docker compose logs --tail 40 backend; die "Portal se nije pokrenuo"; }
 ok "Portal radi lokalno na 127.0.0.1:$APP_PORT"
