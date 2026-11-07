@@ -101,6 +101,8 @@ body {
 .theme-dark [class*="bg-ccn-mist"] { background-color: rgba(255,255,255,0.06) !important; }
 .theme-dark .text-ccn-navy:not(.bg-ccn-gold):not(.bg-ccn-teal):not(.bg-white) { color: #F1F5F9; }
 .theme-dark .bg-ccn-gold, .theme-dark .bg-ccn-teal { color: #0B1F3B; }
+.theme-dark .bg-ccn-teal .text-ccn-navy { color: #0B1F3B; }
+.theme-dark .bg-ccn-teal input { background-color: #FFFFFF; color: #0B1F3B; }
 .theme-dark .text-slate-500, .theme-dark .text-slate-400 { color: #8FA3BC !important; }
 .theme-dark .text-slate-600, .theme-dark .text-slate-700 { color: #B6C4D6 !important; }
 .theme-dark .text-ccn-tealdark { color: var(--teal) !important; }

@@ -59,6 +59,7 @@ export function CamerasWidget({ title = "Kamere uživo sa granica", compact = fa
           </button>
         ))}
       </div>
+      {!compact && !shown.length && <p className="text-white/60 text-sm py-6" data-testid="cameras-empty">Nema kamera za zadanu pretragu.</p>}
       <p className="mt-4 text-[11px] text-white/40 flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Slike se automatski osvježavaju. Izvor: HAK.</p>
       <Dialog open={!!open} onOpenChange={() => setOpen(null)}>
         <DialogContent className="max-w-4xl bg-ccn-navy text-white border-ccn-navy2" data-testid="camera-modal">

@@ -16,7 +16,7 @@ export function BreakingTicker() {
   return (
     <div className="bg-ccn-red text-white border-t border-black/10" data-testid="breaking-ticker" role="region" aria-label="Hitne vijesti">
       <div className="max-w-7xl mx-auto px-4 flex items-stretch h-10">
-        <span className="relative z-10 shrink-0 flex items-center gap-1.5 bg-[#A50D1F] pl-3 pr-4 text-[11px] font-extrabold uppercase tracking-[0.2em] -ml-4 sm:ml-0"
+        <span className="relative z-10 shrink-0 flex items-center gap-1.5 bg-[#A50D1F] pl-3 pr-4 text-[11px] font-extrabold uppercase tracking-[0.2em]"
           style={{ clipPath: "polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)", paddingRight: "1.4rem" }}>
           <Zap className="w-4 h-4 text-ccn-gold" /> Hitno
         </span>

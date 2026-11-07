@@ -15,8 +15,8 @@ function SearchForm({ params, setParams, cats }) {
   const submit = (e) => { e.preventDefault(); setParams(Object.fromEntries(Object.entries(f).filter(([, v]) => v))); };
   const cls = "border border-slate-300 rounded-sm px-3 py-2 text-sm bg-white";
   return (
-    <form onSubmit={submit} className="grid sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-8" data-testid="search-form">
-      <input value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder="Pojam (npr. čaršija, Bužim…)" className={`${cls} lg:col-span-2`} data-testid="search-query" />
+    <form onSubmit={submit} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-8" data-testid="search-form">
+      <input value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder="Pojam (npr. čaršija, Bužim…)" className={`${cls} sm:col-span-2 lg:col-span-3`} data-testid="search-query" />
       <select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={cls} data-testid="search-category">
         <option value="">Sve kategorije</option>{cats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
       </select>
@@ -24,9 +24,9 @@ function SearchForm({ params, setParams, cats }) {
         <option value="">Svi autori</option>{authors.map((u) => <option key={u.id} value={u.slug}>{u.name}</option>)}
       </select>
       <input type="date" value={f.date_from} onChange={(e) => setF({ ...f, date_from: e.target.value })} className={cls} aria-label="Od datuma" data-testid="search-from" />
-      <div className="flex gap-2">
-        <input type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} className={`${cls} flex-1`} aria-label="Do datuma" data-testid="search-to" />
-        <button className="bg-ccn-navy text-white px-4 rounded-sm text-sm font-semibold" data-testid="search-submit">Traži</button>
+      <div className="flex gap-2 min-w-0">
+        <input type="date" value={f.date_to} onChange={(e) => setF({ ...f, date_to: e.target.value })} className={`${cls} flex-1 min-w-0`} aria-label="Do datuma" data-testid="search-to" />
+        <button className="bg-ccn-teal text-ccn-navy font-bold px-5 rounded-sm text-sm hover:bg-ccn-gold transition-colors" data-testid="search-submit">Traži</button>
       </div>
     </form>
   );

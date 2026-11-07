@@ -83,6 +83,9 @@ export function Footer() {
           <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row gap-2 justify-between text-xs text-white/45">
             <span>© {year} {site.site_name}. {site.footer_text}</span>
             <span className="font-serif-news italic text-ccn-gold/70">CČN · Cazin, Bosna i Hercegovina</span>
+            <a href="https://jonuzovicdesign.de" target="_blank" rel="noopener" className="hover:text-ccn-teal transition-colors" data-testid="footer-designer-link">
+              Izradio <span className="font-semibold text-white/80">JonuzovicDesign</span>
+            </a>
           </div>
         </div>
       </div>

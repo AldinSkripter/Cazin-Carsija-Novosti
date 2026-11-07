@@ -1,0 +1,32 @@
+{
+  "summary": "Focused retest of 3 items. (1) BUG FIX for the header/breaking bar: VERIFIED on desktop. [data-testid=breaking-ticker] is inside the sticky <header>. At 1920px the HITNO label starts at x=336, the same as header-logo (x=336) and the first nav link. The label is 40px tall, matching the h-10 bar. The ticker wrap starts right after the label (x=438), so ticker text is clipped there and is never under the label. Nav bottom (186) equals bar top (186), so there is no gap or overlap. After scrolling, the bar bottom equals the header bottom (147 at 1920, 93 at 390): it stays attached and does not overlap content. At 390px the label is full-bleed at x=0 (-ml-4) while the logo/menu sit at 12-64px. This looks intentional, but strictly it does not line up with the 16px container edge. (2) Dark mode: theme-toggle (desktop) and theme-toggle-mobile (sheet) both switch data-theme light<->dark. The choice is saved in localStorage ccn_theme=dark and survives reload. Readability is good for the nav, section titles, cards, most-read, weather, cameras widget, article page, comments form, search inputs/selects and footer. One problem: the footer newsletter band (teal) is unreadable in dark mode (details below). (3) Cameras: the API returns 77 cameras (52 BiH-HR, 11 Srbija, 10 Slovenija, 4 Crna Gora). The first 4 are Maljevac x3 + Izačić, with correct names, locations and groups. I checked the /image proxy for ALL 77 cameras: all return 200 image/jpeg. /kamere: the search and group chips filter correctly (SLO 10, SRB 11, CG 4, BiH-HR 52, 'Maljevac' 3, 'Izačić' 1). The modal opens with the image and an 'Izvor' link (_blank, m.hak.hr). Mobile layout is fine. (4) Admin /admin/kamere: 77 rows with a Grupa column. The edit dialog has a Grupa select (—, 4 groups, Ostalo). Editing the name saved and persisted. I reverted the change and confirmed via the API.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Footer newsletter (Footer.jsx L22, L27-28)", "issue": "In DARK mode the headline 'Vijesti iz Krajine, svako jutro.' (text-ccn-navy) turns #F1F5F9 on the teal background (contrast 2.04). The email input text also turns #F1F5F9 on a white input background (contrast 1.1), so typed emails are invisible. Cause: the index.css rule '.theme-dark .text-ccn-navy:not(.bg-ccn-gold):not(.bg-ccn-teal):not(.bg-white)' only excludes the element itself, not descendants of bg-ccn-teal, and the input has no bg-white class. Fix: add '.theme-dark .bg-ccn-teal .text-ccn-navy { color:#0B1F3B }', and give the input bg-white (or exclude 'footer [data-testid=footer-newsletter] *').", "selector": "[data-testid=footer-newsletter], [data-testid=footer-newsletter-email]", "priority": "MEDIUM"},
+      {"component": "Search page filter form (ListingPage.jsx L18-30)", "issue": "This bug already existed and occurs in BOTH themes. At 1920px the form uses lg:grid-cols-6 inside the narrow main column, and the last cell (date-to + 'Traži' button) overflows: form scrollWidth 908 vs clientWidth 819. The search-submit button (x 1180-1244) sits under the sidebar (aside starts at x=1195); elementFromPoint at its center hits the sidebar, so it cannot be seen or clicked (Enter still submits). In dark mode the button is also navy on navy. Fix: use fewer columns (e.g. lg:grid-cols-3) or add min-w-0 to the date inputs, and give the button a teal/gold background.", "selector": "[data-testid=search-submit]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Search page", "issues": ["Native browser date pickers (mm/dd/yyyy, English format) are used instead of the shadcn Calendar/Popover. They do not match a Bosnian UI, and the calendar icon is faint in dark mode."]},
+      {"screen": "/kamere", "issues": ["Searching for a term with no matches (e.g. 'zzzz') shows an empty grid with no 'Nema rezultata' message."]},
+      {"screen": "Breaking bar mobile 390px", "issues": ["The HITNO label is full-bleed at x=0 while the hamburger and logo are inset. This is acceptable, but it does not align with the container edge if strict alignment is wanted."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix dark-mode contrast in the footer newsletter band: the headline and email input text become near-white on teal/white",
+    "Fix the search filter form overflow: the search-submit button is hidden under the sidebar at 1920px",
+    "Optional: replace the native date inputs with the shadcn Calendar; add an empty state to /kamere search"
+  ],
+  "critical_code_review_comments": [
+    "index.css: the .theme-dark .text-ccn-navy override is too broad. Any navy text on a teal/gold/white parent (not on the element itself) becomes white. Scope it by parent background, or invert only on dark surfaces.",
+    "BreakingTicker: the -ml-4 on mobile makes the label full-bleed, while the sm:ml-0 desktop layout aligns with the container. This is intentional, but it is a deviation from the stated 'left edge aligns with logo' at 390px."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (cameras API + 77/77 image proxies)", "frontend": "~90% (2 medium UI issues: dark newsletter contrast and an existing search button overlap)"},
+  "seed_data_creation": "None. I renamed camera 'GP Vitaljina – Izlaz iz HR u CG' to '... TEST_EDIT' and then reverted it. I verified via the API that the name is back to the original, the group is unchanged, and the count is 77.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Theme is stored in localStorage ccn_theme. To dismiss the cookie banner, click 'Samo neophodni'. Admin login testids: login-email/login-password/login-submit. Camera admin testids: cameras-row-{id}, cameras-edit-{id}, field-name, field-group, cameras-save. On /kamere the cards are [data-testid=camera-{uuid}] and the chips are cameras-group-{group name}."
+}
