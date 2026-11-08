@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException, Depends, Body, Request
 from pymongo.errors import DuplicateKeyError
 
 from core import db, new_id, iso, require, audit, get_settings
-from services import process_image
+from services import process_image, ai_generate
 from routes_articles import ArticleIn, prepare, save_version
 
 router = APIRouter(prefix="/api/admin/facebook")
@@ -101,6 +101,97 @@ def is_junk(p) -> bool:
     return junk_reason(p) is not None
 
 
+TOPIC_RULES = {
+    "obavjestenja": [(r"obavještavamo vas o smrti|obavještenje o smrti|smrtovnic|dženaz|rahmetli|preselio na ahiret|preselila na ahiret|posljednji ispraćaj|ukop će se obaviti|klanjanje dženaze", 5),
+                     (r"preminu(o|la)|tužnu vijest|s tugom|sa tugom|izraz\w* saučešć|saučešć|komemoracij|vječna pamet|neka mu je rahmet|neka joj je rahmet", 2)],
+    "sport": [(r"utakmic|nogomet|fudbal|košark|rukomet|odbojk|\bnk [a-zčćžšđ]|\bfk [a-zčćžšđ]|\bok [a-zčćžšđ]\w+ (pobijed|izgubi)|\brk [a-zčćžšđ]|\bkk [a-zčćžšđ]", 3),
+              (r"\bgol\b|golov|turnir|prvenstv|\bligi?\b|ligu\b|trener|sportaš|sportist|medalj|karate|džudo|kik-?boks|boks|šahov|maraton|atleti|stadion|navijač|dres|sezon\w* (u|na) ligi|plasman|finale|polufinale|kupš", 1)],
+    "hronika": [(r"policij|uhapšen|uhapšen|lišen\w* slobode|krivičn\w* djel|ubist|ubijen|pljakš|razbojništv|tužilaštv|pritvor|optužnic|vozilom udario|saobraćajn\w* nesreć|poginu|teško povrijeđ", 3),
+                (r"nesreć|požar|vatrogas|krađ|ukraden|nestal\w* osob|nestao|nestala|povrijeđen|sudar|prijavljen\w* policij|droga|narkotik|\bmup\b", 2)],
+    "politika": [(r"gradsk\w* vijeć|općinsk\w* vijeć|skupštin\w* usk|vlad[aeiu] usk|parlament|zastupničk|izborn\w* (kampanj|komisij)|lokaln\w* izbor|opći izbor", 3),
+                 (r"načelnik|gradonačelnik|ministar|ministarstv|stranka|stranke|kandidat|vijećnik|sjednic|premijer|predsjedništv|\bsda\b|\bsdp\b|\bnip\b|\bdf\b|\bsnsd\b|\bhdz\b", 2)],
+    "zdravlje": [(r"dom zdravlja|bolnic|kantonaln\w* bolnic|\bkbc\b|\bukc\b|hitna pomoć|vakcin|epidemij", 3), (r"doktor|ljekar|pacijent|zdravstv|ambulant|liječen|operacij|bolest|gripa|virus", 1)],
+    "obrazovanje": [(r"osnovn\w* škol|srednj\w* škol|gimnazij|fakultet|univerzitet|maturant|upis u škol|polugodišt|nastavn\w* godin", 3), (r"škol|učeni|student|nastavni|profesor|vrtić|đak|đaci", 1)],
+    "kultura": [(r"izložb|koncert|festival|pozorišt|teatar|promocij\w* knjig|književn|muzej|galerij\w* (umjetn|slika)|smotr\w* folklor", 3),
+                (r"umjetn|slikar|pjesni|knjig|kultur|folklor|bakrorez|reljef|tradicij|zavičaj|predstav\w* (u|na)|film", 1)],
+    "ekonomija": [(r"investic|privred|preduzeć|zapošljav|nov\w* radn\w* mjest|tvornic|fabrik|izvoz|inflacij|\bkm\b.*(milion|hiljad)|budžet", 3),
+                  (r"firma|kompanij|poduzetni|cijen[aeu]|plat[aeu]|penzij|otvoren\w* (nov\w* )?(market|prodavnic|radnj|trgovin)|poljoprivred", 1)],
+    "vremenska-prognoza": [(r"vremensk\w* prognoz|meteorološ|\bfhmz\b|upozorenje (na|zbog) (kiš|snijeg|olu|nevrem|vruć)|narandžast\w* upozorenj|žut\w* upozorenj", 3),
+                           (r"snijeg|olujn|nevrijeme|nevremen|padavin|temperatur|toplotn\w* tal|mraz|poplav", 1)],
+    "tehnologija": [(r"internet|aplikacij|umjetn\w* inteligencij|\bai\b|softver|pametn\w* telefon|5g|optik", 2)],
+    "drustvo": [(r"humanitarn|donacij|volonter|udruženj|akcij\w* (čišćenj|prikupljanj)|pomoć porodic|socijaln|penzioner|mladi|žene|djec\w* (bez|sa)|tradicionaln\w* manifestacij", 2),
+                (r"porodic|zajednic|građan|stanovni|selo|mjesn\w* zajednic|džamij|ramazan|bajram|iftar", 1)],
+    "zanimljivosti": [(r"zanimljiv|nevjerovatn|rekord|neobičn|vijest dana", 2)],
+}
+PLACE_RULES = [
+    ("bihac", r"bihać|bihac"), ("velika-kladusa", r"velik\w* kladuš|kladuš"), ("bosanska-krupa", r"bosansk\w* krup|\bkrup[aiu]\b"),
+    ("buzim", r"bužim|buzim"), ("bosanski-petrovac", r"bosansk\w* petrovc|bosanski petrovac|petrovc"), ("sanski-most", r"sansk\w* most|sanskom mostu"),
+    ("kljuc", r"ključ\b|ključu\b"), ("cazin", r"cazin"),
+]
+SCOPE_RULES = [("unsko-sanski-kanton", r"unsko-sansk|\busk\b"), ("bosna-i-hercegovina", r"\bbih\b|bosn\w* i hercegovin|federacij\w* bih|sarajev|mostar|tuzl|zenic|banj\w* luk"),
+               ("region", r"hrvatsk|srbij|crn\w* gor|sloveni|zagreb|beograd"), ("svijet", r"njemačk|austrij|amerik|\bsad\b|evropsk\w* unij|rusij|ukrajin|turskoj|turska")]
+AI_TOPICS = {"sport": "sport", "hronika": "crna hronika, policija, nesreće", "politika": "politika, vlast, vijeće, izbori", "drustvo": "društvo, humanitarno, zajednica",
+             "ekonomija": "ekonomija, posao, firme", "kultura": "kultura, umjetnost, događaji", "zdravlje": "zdravlje", "obrazovanje": "škole i obrazovanje",
+             "vremenska-prognoza": "vrijeme i prognoza", "tehnologija": "tehnologija", "zanimljivosti": "zanimljivosti", "obavjestenja": "obavještenje o smrti, dženaza",
+             "lokalno": "opća lokalna vijest bez posebne teme"}
+
+
+def topic_scores(t: str) -> dict:
+    return {slug: sum(w * len(re.findall(rx, t)) for rx, w in rules) for slug, rules in TOPIC_RULES.items()}
+
+
+def detect_place(t: str):
+    hits = {s: len(re.findall(rx, t)) for s, rx in PLACE_RULES}
+    place = max((s for s in hits if hits[s] and s != "cazin"), key=lambda s: hits[s], default=None)
+    if place and hits[place] >= hits["cazin"]:
+        return place
+    if hits["cazin"]:
+        return "cazin"
+    return next((s for s, rx in SCOPE_RULES if re.search(rx, t)), "cazin")
+
+
+def detect_categories(text: str, topic=None):
+    t = text.lower()
+    scores = topic_scores(t)
+    if scores["obavjestenja"] >= 4:
+        return "obavjestenja", []
+    if topic is None:
+        best = max(scores, key=scores.get)
+        topic = best if scores[best] >= 3 else None
+    if topic in (None, "lokalno"):
+        return detect_place(t), []
+    if topic == "obavjestenja":
+        return "obavjestenja", []
+    return topic, [detect_place(t)]
+
+
+async def ai_topic(text: str):
+    if os.environ.get("AI_PROVIDER") == "off":
+        return None
+    opts = "\n".join(f"{k} = {v}" for k, v in AI_TOPICS.items())
+    prompt = (f"Razvrstaj objavu lokalnog portala u JEDNU rubriku. Odgovori SAMO oznakom s lijeve strane, bez ikakvog drugog teksta.\n{opts}\n\n"
+              f"Objava:\n{text[:1500]}")
+    try:
+        ans = (await asyncio.wait_for(ai_generate(prompt), 90)).strip().lower()
+    except Exception as e:
+        log.info("AI rubrika nije dostupna: %s", e)
+        return None
+    return next((k for k in sorted(AI_TOPICS, key=len, reverse=True) if k in ans), None)
+
+
+async def resolve_categories(text: str, forced: str = None):
+    if forced:
+        primary, extra = forced, ([detect_place(text.lower())] if forced not in [s for s, _ in PLACE_RULES] + ["obavjestenja"] else [])
+    else:
+        primary, extra = detect_categories(text, await ai_topic(text))
+    cats = {c["slug"]: c["id"] async for c in db.categories.find({"slug": {"$in": [primary, *extra, "cazin"]}}, {"slug": 1, "id": 1})}
+    main = cats.get(primary) or cats.get("cazin")
+    if not main:
+        c = await db.categories.find_one({}, {"id": 1})
+        main = c and c["id"]
+    return main, [cats[s] for s in extra if s in cats and cats[s] != main]
+
+
 def post_key(p) -> str:
     return f"fb-{p.get('createdTime')}"
 
@@ -120,16 +211,15 @@ async def list_posts(user=Depends(require("articles.publish"))):
         title, summary, _, _ = parse_post(p["message"])
         created = datetime.fromtimestamp(p["createdTime"], timezone.utc).isoformat() if p.get("createdTime") else None
         out.append({"key": post_key(p), "title": title, "summary": summary, "image": p.get("photoURL"), "created_at": created,
-                    "suggested": not is_junk(p), "reason": junk_reason(p), "status": await post_status(post_key(p), post_hash(p["message"]))})
+                    "suggested": not is_junk(p), "reason": junk_reason(p), "category": detect_categories(p["message"])[0], "status": await post_status(post_key(p), post_hash(p["message"]))})
     return out
 
 
-async def run_import(user, limit=8, remove_samples=False, auto=False, operator=None, keys=None, max_age_hours=None):
+async def run_import(user, limit=8, remove_samples=False, auto=False, operator=None, keys=None, max_age_hours=None, forced=None):
     async with IMPORT_LOCK:
         settings = await get_settings()
         page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
         posts = (await fetch_posts(page))[:limit]
-        cat = await db.categories.find_one({"slug": "cazin"}, {"id": 1}) or await db.categories.find_one({}, {"id": 1})
         imported, skipped, ignored = [], 0, 0
         min_ts = datetime.now(timezone.utc).timestamp() - max_age_hours * 3600 if max_age_hours else 0
         for p in reversed(posts):
@@ -153,7 +243,8 @@ async def run_import(user, limit=8, remove_samples=False, auto=False, operator=N
                 except Exception as e:
                     log.warning("FB slika nije preuzeta: %s", e)
             aid = new_id()
-            data = await prepare(ArticleIn(title=title, summary=summary, body=html_body, tags=tags, category_id=cat and cat["id"],
+            cat_id, extra_ids = await resolve_categories(p["message"], (forced or {}).get(key))
+            data = await prepare(ArticleIn(title=title, summary=summary, body=html_body, tags=tags, category_id=cat_id, category_ids=extra_ids,
                                            source="Facebook stranica Cazin Čaršija Novosti", featured_image=img).model_dump(), aid, user)
             pub = datetime.fromtimestamp(p["createdTime"], timezone.utc).isoformat() if p.get("createdTime") else iso()
             data.update(id=aid, status="published", published_at=pub, published_by=user["id"], was_published=True, created_by=user["id"],
@@ -195,7 +286,14 @@ async def import_posts(body: dict = Body(default={}), user=Depends(require("arti
     if keys is not None and not isinstance(keys, list):
         raise HTTPException(400, "Neispravan izbor objava")
     return await run_import({**user, "id": author["id"], "name": author["name"]}, int(body.get("limit") or 8), bool(body.get("remove_samples")),
-                            operator=user, keys=set(keys) if keys is not None else None)
+                            operator=user, keys=set(keys) if keys is not None else None, forced=await valid_forced(body.get("categories")))
+
+
+async def valid_forced(m):
+    if not isinstance(m, dict) or not m:
+        return None
+    slugs = {c["slug"] async for c in db.categories.find({}, {"slug": 1})}
+    return {k: v for k, v in m.items() if isinstance(v, str) and v in slugs}
 
 
 @router.get("/auto")

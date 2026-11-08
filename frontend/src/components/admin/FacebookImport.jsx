@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 
 const STATUS = { imported: "Već objavljeno", ignored: "Ranije preskočeno", new: "Nova" };
 
-const PostList = ({ posts, sel, toggle }) => {
+const PostList = ({ posts, sel, toggle, cats, forced, setForced }) => {
   if (!posts) return <p className="text-slate-500 flex items-center gap-2" data-testid="fb-posts-loading"><Loader2 className="w-4 h-4 animate-spin" />Učitavam objave sa Facebooka…</p>;
   if (!posts.length) return <p className="text-slate-500" data-testid="fb-posts-empty">Nema objava.</p>;
   return (
@@ -20,6 +20,12 @@ const PostList = ({ posts, sel, toggle }) => {
           <span className="min-w-0">
             <span className="font-semibold block leading-tight">{p.title}</span>
             <span className="text-xs text-slate-500">{fmtDate(p.created_at)} · {STATUS[p.status]}{p.status === "new" && p.reason && ` · ${p.reason}`}</span>
+            {p.status !== "imported" && (
+              <select value={forced[p.key] || ""} onChange={(e) => setForced({ ...forced, [p.key]: e.target.value })} onClick={(e) => e.stopPropagation()} className="mt-1 border rounded-sm px-2 py-1 text-xs w-full max-w-xs" data-testid={`fb-post-cat-${p.key}`}>
+                <option value="">Rubrika automatski (prijedlog: {cats.find((c) => c.slug === p.category)?.name || p.category})</option>
+                {cats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
+              </select>
+            )}
           </span>
         </label>
       ))}
@@ -50,10 +56,13 @@ export const FacebookImport = ({ onDone }) => {
   const [people, setPeople] = useState([]);
   const [posts, setPosts] = useState(null);
   const [sel, setSel] = useState([]);
+  const [cats, setCats] = useState([]);
+  const [forced, setForced] = useState({});
   useEffect(() => {
     if (!open) { return; }
     api.get("/admin/facebook/auto").then((r) => setAuto(r.data));
     api.get("/admin/users/directory").then((r) => setPeople(r.data));
+    api.get("/public/categories").then((r) => setCats(r.data));
     api.get("/admin/facebook/posts").then((r) => { setPosts(r.data); setSel(r.data.filter((p) => p.status === "new" && p.suggested).map((p) => p.key)); })
       .catch((e) => { setPosts([]); toast.error(errMsg(e)); });
   }, [open]);
@@ -64,13 +73,13 @@ export const FacebookImport = ({ onDone }) => {
   const run = async () => {
     setBusy(true);
     try {
-      const r = await api.post("/admin/facebook/import", { limit: 8, keys: sel, remove_samples: removeSamples });
+      const r = await api.post("/admin/facebook/import", { limit: 8, keys: sel, remove_samples: removeSamples, categories: Object.fromEntries(Object.entries(forced).filter(([, v]) => v)) });
       setRes(r.data);
       if (r.data.imported.length) toast.success(`Objavljeno ${r.data.imported.length} objava`); else toast.info("Ništa novo nije objavljeno");
       onDone?.();
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
-  const close = () => { setOpen(false); setRes(null); setPosts(null); };
+  const close = () => { setOpen(false); setRes(null); setPosts(null); setForced({}); };
   return (
     <>
       <Button variant="outline" onClick={() => setOpen(true)} data-testid="fb-import-button"><Facebook className="w-4 h-4 mr-1" />Uvezi sa Facebooka</Button>
@@ -86,8 +95,8 @@ export const FacebookImport = ({ onDone }) => {
               </div>
             ) : (
               <div className="grid gap-3 text-sm">
-                <p>Označite objave koje želite objaviti na portalu. Neoznačene nove objave se pamte kao preskočene i automatski uvoz ih neće objaviti. Facebook javno prikazuje samo zadnjih ~5 objava.</p>
-                <PostList posts={posts} sel={sel} toggle={toggle} />
+                <p>Označite objave koje želite objaviti na portalu. Svaka objava sama ide u odgovarajuću rubriku (npr. Sport, Bihać, Hronika), a obavještenja o smrti u rubriku Obavještenja, koja se ne prikazuje na naslovnici. Neoznačene nove objave se pamte kao preskočene i automatski uvoz ih neće objaviti. Facebook javno prikazuje samo zadnjih ~5 objava.</p>
+                <PostList posts={posts} sel={sel} toggle={toggle} cats={cats} forced={forced} setForced={setForced} />
                 <label className="flex gap-2 items-center"><input type="checkbox" checked={removeSamples} onChange={(e) => setRemoveSamples(e.target.checked)} data-testid="fb-import-remove-samples" />Obriši probne „primjer“ članke</label>
                 <Button className="bg-ccn-navy w-fit" disabled={busy || !posts || !sel.length} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Objavi označene ({sel.length})</Button>
                 {auto && <AutoBox auto={auto} people={people} saveAuto={saveAuto} />}

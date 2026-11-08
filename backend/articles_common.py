@@ -52,10 +52,18 @@ async def category_ids_with_children(slug):
     return cat, [cat["id"]] + [k["id"] for k in kids]
 
 
+async def hidden_category_ids():
+    return [c["id"] async for c in db.categories.find({"hide_from_home": True}, {"id": 1})]
+
+
 async def query_articles(category=None, tag=None, author=None, q=None, date_from=None, date_to=None, sort="latest",
-                         video=False, gallery=False, page=1, limit=12, exclude=None):
+                         video=False, gallery=False, page=1, limit=12, exclude=None, hide=False):
     await publish_due()
     f = public_filter()
+    if hide and not category:
+        hidden = await hidden_category_ids()
+        if hidden:
+            f["category_id"] = {"$nin": hidden}
     if category:
         cat, ids = await category_ids_with_children(category)
         if not cat:

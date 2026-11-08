@@ -18,7 +18,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from pydantic import BaseModel
 
 from core import db, new_id, iso, now, fold, get_settings, client_ip, rate_limit, strip_tags, secret, JWT_ALG, permissions_for
-from articles_common import query_articles, enrich, publish_due, public_filter, CARD
+from articles_common import query_articles, enrich, publish_due, public_filter, hidden_category_ids, CARD
 from services import get_object, process_image, put_object, APP_NAME, send_email, email_template
 from newsletter import auto_digest, resolve_base
 
@@ -55,25 +55,27 @@ async def public_categories():
 @router.get("/public/articles")
 async def list_articles(category: str = None, tag: str = None, author: str = None, q: str = None, date_from: str = None,
                         date_to: str = None, sort: str = "latest", video: bool = False, gallery: bool = False, page: int = 1, limit: int = 12):
-    return await query_articles(category, tag, author, q, date_from, date_to, sort, video, gallery, max(page, 1), min(limit, 50))
+    return await query_articles(category, tag, author, q, date_from, date_to, sort, video, gallery, max(page, 1), min(limit, 50),
+                                hide=not (category or tag or author or q))
 
 
 async def resolve_block(b, used):
     t, lim = b.get("type"), int(b.get("limit") or 6)
     res = None
     if t == "hero":
-        pinned = await db.articles.find(public_filter({"is_pinned": True}), CARD).sort("published_at", -1).limit(5).to_list(5)
-        rest = await db.articles.find(public_filter({"id": {"$nin": [p["id"] for p in pinned]}}), CARD).sort("published_at", -1).limit(5 - len(pinned)).to_list(5)
+        hid = {"category_id": {"$nin": await hidden_category_ids()}}
+        pinned = await db.articles.find(public_filter({"is_pinned": True, **hid}), CARD).sort("published_at", -1).limit(5).to_list(5)
+        rest = await db.articles.find(public_filter({"id": {"$nin": [p["id"] for p in pinned]}, **hid}), CARD).sort("published_at", -1).limit(5 - len(pinned)).to_list(5)
         res = await enrich(pinned + rest)
     elif t in ("latest", "category", "video", "gallery"):
         r = await query_articles(category=b.get("category_slug") if t == "category" else None, video=t == "video",
-                                 gallery=t == "gallery", limit=lim, exclude=list(used) if b.get("dedupe", True) else None)
+                                 gallery=t == "gallery", limit=lim, exclude=list(used) if b.get("dedupe", True) else None, hide=True)
         res = r["items"]
         if not res and used and t != "latest":
             res = (await query_articles(category=b.get("category_slug") if t == "category" else None, video=t == "video",
-                                        gallery=t == "gallery", limit=lim))["items"]
+                                        gallery=t == "gallery", limit=lim, hide=True))["items"]
     elif t == "most_read":
-        res = (await query_articles(sort="popular", limit=lim))["items"]
+        res = (await query_articles(sort="popular", limit=lim, hide=True))["items"]
     elif t == "manual":
         ids = b.get("article_ids") or []
         docs = await db.articles.find(public_filter({"id": {"$in": ids}}), CARD).to_list(50)

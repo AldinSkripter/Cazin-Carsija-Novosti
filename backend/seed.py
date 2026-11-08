@@ -76,6 +76,20 @@ HOME_BLOCKS = [
 ]
 
 
+async def ensure_notices_category():
+    if await db.categories.find_one({"slug": "obavjestenja"}):
+        return
+    await db.categories.insert_one({"id": new_id(), "name": "Obavještenja", "slug": "obavjestenja", "description": "Obavještenja o smrti, dženaze i komemoracije",
+                                    "parent_id": None, "seo_title": "Obavještenja – Cazin Čaršija Novosti", "seo_description": "Obavještenja o smrti i dženazama iz Cazina i Krajine.",
+                                    "image": "", "color": "#475569", "visible": True, "show_in_menu": True, "hide_from_home": True, "order": 90, "created_at": iso()})
+    s = (await db.settings.find_one({"key": "site"}) or {}).get("value")
+    if s and not any(m.get("url") == "/kategorija/obavjestenja" for m in s.get("main_menu", [])):
+        menu = s.get("main_menu", [])
+        at = next((i for i, m in enumerate(menu) if m.get("url") == "/kamere"), len(menu))
+        menu.insert(at, {"label": "Obavještenja", "url": "/kategorija/obavjestenja"})
+        await db.settings.update_one({"key": "site"}, {"$set": {"value.main_menu": menu}})
+
+
 async def seed_all():
     for key, (name, perms) in ROLE_DEFAULTS.items():
         await db.roles.update_one({"key": key}, {"$setOnInsert": {"key": key, "name": name, "permissions": perms}}, upsert=True)
@@ -105,6 +119,8 @@ async def seed_all():
         s["footer_menu"] = [{"label": t, "url": f"/stranica/{sl}"} for t, sl in PAGES] + [{"label": "Autori", "url": "/autori"}, {"label": "Arhiva", "url": "/arhiva"},
                                                                                        {"label": "Prijavite vijest", "url": "/prijavite-vijest"}, {"label": "RSS", "url": "/api/rss.xml"}]
         await db.settings.update_one({"key": "site"}, {"$set": {"value": s}})
+
+    await ensure_notices_category()
 
     if not await db.pages.count_documents({}):
         for t, sl in PAGES:
