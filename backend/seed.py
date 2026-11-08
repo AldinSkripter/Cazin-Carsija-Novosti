@@ -20,7 +20,7 @@ CATEGORIES = [
 ]
 MENU_CATS = ["Cazin", "Unsko-sanski kanton", "Bosna i Hercegovina", "Region", "Svijet", "Hronika", "Sport", "Kultura", "Video"]
 
-PAGES = [("O nama", "o-nama"), ("Redakcija", "redakcija"), ("Kontakt", "kontakt"), ("Impressum", "impressum"),
+PAGES = [("O nama", "o-nama"), ("Redakcija", "redakcija"), ("Kontakt", "kontakt"), ("Impresum", "impresum"),
          ("Politika privatnosti", "politika-privatnosti"), ("Politika kolačića", "politika-kolacica"), ("Uslovi korištenja", "uslovi-koristenja"),
          ("Oglašavanje", "oglasavanje"), ("Ispravke i demantiji", "ispravke-i-demantiji")]
 

@@ -195,7 +195,7 @@ def _attr_filter(tag, attr, value):
 
 def sanitize_html(html: str) -> str:
     return nh3.clean(html or "", tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRS, attribute_filter=_attr_filter,
-                     url_schemes={"http", "https", "mailto"})
+                     url_schemes={"http", "https", "mailto", "tel"})
 
 
 def strip_tags(html: str) -> str:

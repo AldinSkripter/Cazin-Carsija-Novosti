@@ -199,6 +199,8 @@ if [ ! -f data/import/.done ]; then
   fi
 fi
 
+if [ ! -f data/import/.legal_v1 ]; then docker compose exec -T backend python legal_pages.py && touch data/import/.legal_v1 && ok "Pravne stranice upisane"; fi
+
 # ---------- 8. SSL ----------
 if [ "$PLESK" = 1 ]; then
   say "Izdajem besplatni SSL (Let's Encrypt)…"
