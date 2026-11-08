@@ -68,7 +68,11 @@ async def resolve_block(b, used):
         rest = await db.articles.find(public_filter({"id": {"$nin": [p["id"] for p in pinned]}, **hid}), CARD).sort("published_at", -1).limit(5 - len(pinned)).to_list(5)
         res = await enrich(pinned + rest)
     elif t in ("latest", "category", "video", "gallery"):
-        r = await query_articles(category=b.get("category_slug") if t == "category" else None, video=t == "video",
+        slug = b.get("category_slug") if t == "category" else None
+        if slug and not await db.categories.find_one({"slug": slug}, {"_id": 1}):
+            b["articles"] = []
+            return b
+        r = await query_articles(category=slug, video=t == "video",
                                  gallery=t == "gallery", limit=lim, exclude=list(used) if b.get("dedupe", True) else None, hide=True)
         res = r["items"]
         if not res and used and t != "latest":

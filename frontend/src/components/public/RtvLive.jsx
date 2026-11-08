@@ -11,8 +11,8 @@ export const RtvLive = ({ big = false, onOpen }) => {
     <>
       <button onClick={show} data-testid={big ? "rtv-live-mobile" : "rtv-live-button"}
         className={big ? "mt-3 flex items-center justify-center gap-2 bg-ccn-red text-white font-bold py-3 rounded-full"
-          : "ml-2 shrink-0 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider bg-ccn-red text-white px-3 py-1.5 rounded-full hover:brightness-110 transition-[filter]"}>
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" /><Tv className="w-3.5 h-3.5" />Gledaj RTV Cazin uživo
+          : "shrink-0 flex items-center gap-2 text-sm font-bold bg-ccn-red text-white px-4 py-2.5 rounded-full hover:brightness-110 hover:-translate-y-0.5 transition-[filter,transform] whitespace-nowrap"}>
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" /><Tv className="w-4 h-4" />Gledaj RTV Cazin uživo
       </button>
       {open && (
         <Dialog open onOpenChange={setOpen}>

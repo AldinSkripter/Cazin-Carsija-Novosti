@@ -103,8 +103,9 @@ export function Header() {
           </Link>
           {!scrolled && site.tagline && <p className="hidden xl:block text-white/45 text-[13px] italic font-serif-news max-w-[220px] leading-snug border-l border-white/15 pl-5">{site.tagline}</p>}
           <div className="flex-1" />
-          <div className="hidden md:block w-[340px]"><SearchBox id="header-search" /></div>
-          <Link to="/prijavite-vijest" className="hidden lg:inline-flex items-center gap-2 bg-ccn-gold text-ccn-navy font-bold text-sm px-5 py-2.5 rounded-full hover:bg-white hover:-translate-y-0.5 transition-all" data-testid="header-submit-news">
+          <div className="hidden md:block w-[300px] xl:w-[340px]"><SearchBox id="header-search" /></div>
+          <div className="hidden lg:block"><RtvLive /></div>
+          <Link to="/prijavite-vijest" className="hidden lg:inline-flex items-center gap-2 whitespace-nowrap bg-ccn-gold text-ccn-navy font-bold text-sm px-5 py-2.5 rounded-full hover:bg-white hover:-translate-y-0.5 transition-all" data-testid="header-submit-news">
             <PenLine className="w-4 h-4" />Prijavite vijest
           </Link>
           <Link to="/pretraga" className="md:hidden text-white p-1" aria-label="Pretraga" data-testid="mobile-search-link"><Search className="w-5 h-5" /></Link>
@@ -122,7 +123,6 @@ export function Header() {
             <Link to="/kamere" className="ml-3 shrink-0 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider bg-ccn-red/15 text-white border border-ccn-red/50 px-3 py-1.5 rounded-full hover:bg-ccn-red transition-colors" data-testid="nav-cameras-live">
               <Video className="w-3.5 h-3.5" />Kamere uživo
             </Link>
-            <RtvLive />
           </div>
         </nav>
         <BreakingTicker />

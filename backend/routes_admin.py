@@ -64,10 +64,33 @@ def crud(path, coll, perm, fields, sort=("order", 1), hook=None, log=True):
 
 
 async def cat_hook(doc, user, ex):
-    doc["slug"] = slugify(doc.get("slug") or doc.get("name", ""))
+    doc["slug"] = slugify(doc.get("slug") or doc.get("name", "") or (ex or {}).get("name", ""))
     if await db.categories.find_one({"slug": doc["slug"], "id": {"$ne": (ex or doc)["id"]}}):
         raise HTTPException(400, "Slug već postoji")
+    if ex and ex.get("slug") and ex["slug"] != doc["slug"]:
+        await rename_category_links(ex["slug"], doc["slug"], doc.get("name") or ex.get("name"), ex.get("name"))
     return doc
+
+
+async def rename_category_links(old, new, name, old_name):
+    hp = await db.settings.find_one({"key": "homepage"}, {"_id": 0})
+    if hp:
+        val = hp.get("value") or {}
+        for k in ("draft", "published"):
+            for b in val.get(k) or []:
+                if b.get("category_slug") == old:
+                    b["category_slug"] = new
+        await db.settings.update_one({"key": "homepage"}, {"$set": {"value": val}})
+    site = await db.settings.find_one({"key": "site"}, {"_id": 0})
+    if site:
+        s = site.get("value") or {}
+        for k in ("main_menu", "footer_menu"):
+            for m in s.get(k) or []:
+                if m.get("url") == f"/kategorija/{old}":
+                    m["url"] = f"/kategorija/{new}"
+                    if m.get("label") == old_name:
+                        m["label"] = name
+        await db.settings.update_one({"key": "site"}, {"$set": {"value": s}})
 
 
 async def tag_hook(doc, user, ex):

@@ -76,6 +76,21 @@ HOME_BLOCKS = [
 ]
 
 
+async def heal_category_links():
+    from routes_admin import rename_category_links
+    cats = await db.categories.find({}, {"_id": 0, "slug": 1, "name": 1, "description": 1, "seo_title": 1}).to_list(500)
+    slugs = {c["slug"] for c in cats}
+    hp = (await db.settings.find_one({"key": "homepage"}) or {}).get("value") or {}
+    site = (await db.settings.find_one({"key": "site"}) or {}).get("value") or {}
+    used = {b.get("category_slug") for k in ("draft", "published") for b in hp.get(k) or [] if b.get("category_slug")}
+    used |= {m["url"][len("/kategorija/"):] for k in ("main_menu", "footer_menu") for m in site.get(k) or [] if str(m.get("url", "")).startswith("/kategorija/")}
+    for old in used - slugs:
+        match = [c for c in cats if old in (slugify((c.get("description") or "").replace("Vijesti –", "")), slugify((c.get("seo_title") or "").split(" – ")[0]))]
+        if len(match) == 1:
+            await rename_category_links(old, match[0]["slug"], match[0]["name"], None)
+            log.info("Popravljen link rubrike %s -> %s", old, match[0]["slug"])
+
+
 async def ensure_notices_category():
     if await db.categories.find_one({"slug": "obavjestenja"}):
         return
@@ -121,6 +136,7 @@ async def seed_all():
         await db.settings.update_one({"key": "site"}, {"$set": {"value": s}})
 
     await ensure_notices_category()
+    await heal_category_links()
 
     if not await db.pages.count_documents({}):
         for t, sl in PAGES:
