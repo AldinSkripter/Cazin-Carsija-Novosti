@@ -11,13 +11,21 @@ const NATIVE_HTML = `<!doctype html><html><head><style>html,body{margin:0;paddin
 <script>new ResizeObserver(function(){parent.postMessage({type:'ccn-native-ad-height',height:document.body.scrollHeight},'*')}).observe(document.body);</script>
 </body></html>`;
 
+const RECTANGLE_HTML = `<!doctype html><html><head><meta name="referrer" content="strict-origin-when-cross-origin"><style>html,body{margin:0;padding:0;width:300px;height:250px;overflow:hidden}</style></head><body>
+<script>var atOptions = {'key':'3b29f279dd8912216e84eb9172023930','format':'iframe','height':250,'width':300,'params':{}};</script>
+<script src="https://bicea.org/22/3b29f279dd8912216e84eb9172023930"></script>
+</body></html>`;
+
 export function AdsterraBanner({ variant = "sidebar" }) {
   const [enabled, setEnabled] = useState(false);
   const [height, setHeight] = useState(250);
   const frame = useRef(null);
   const native = variant === "native";
+  const rectangle = variant === "rectangle";
+  const width = rectangle ? 300 : 160;
+  const fixedHeight = rectangle ? 250 : 600;
   useEffect(() => {
-    const desktop = window.matchMedia("(min-width: 1024px)");
+    const desktop = window.matchMedia(rectangle ? "(min-width: 316px)" : "(min-width: 1024px)");
     const update = () => {
       try {
         setEnabled((native || desktop.matches) && JSON.parse(localStorage.getItem("ccn_consent") || "null")?.marketing === true);
@@ -34,7 +42,7 @@ export function AdsterraBanner({ variant = "sidebar" }) {
       window.removeEventListener("ccn-consent-change", update);
       window.removeEventListener("storage", update);
     };
-  }, [native]);
+  }, [native, rectangle]);
   useEffect(() => {
     if (!native || !enabled) return;
     const resize = (event) => {
@@ -49,8 +57,8 @@ export function AdsterraBanner({ variant = "sidebar" }) {
   return (
     <aside className="w-full min-w-0 overflow-hidden" aria-label="Reklama" data-testid={`adsterra-${variant}`}>
       <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-1 text-center">Oglas</div>
-      <iframe ref={frame} title={native ? "Adsterra preporučeni sadržaj" : "Adsterra oglas"} srcDoc={native ? NATIVE_HTML : BANNER_HTML} width={native ? "100%" : "160"} height={native ? height : 600} loading="lazy"
-        className="block mx-auto border-0" style={{ width: native ? "100%" : 160, height: native ? height : 600 }} />
+      <iframe ref={frame} title={native ? "Adsterra preporučeni sadržaj" : `Adsterra oglas ${width} × ${fixedHeight}`} srcDoc={native ? NATIVE_HTML : rectangle ? RECTANGLE_HTML : BANNER_HTML} width={native ? "100%" : width} height={native ? height : fixedHeight} loading="lazy"
+        className="block mx-auto border-0" style={{ width: native ? "100%" : width, height: native ? height : fixedHeight }} />
     </aside>
   );
 }

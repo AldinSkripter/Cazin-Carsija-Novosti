@@ -6,6 +6,7 @@ import { api, errMsg, BACKEND } from "../../lib/api";
 import { useSite } from "../../lib/auth";
 import { loadAnalytics } from "../../lib/seo";
 import { AdSlot } from "./AdSlot";
+import { AdsterraBanner } from "./AdsterraBanner";
 
 function NewsletterBand() {
   const [email, setEmail] = useState("");
@@ -46,6 +47,7 @@ export function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="mt-20" data-testid="site-footer">
+      <div className="max-w-7xl mx-auto px-2 pb-8"><AdsterraBanner variant="rectangle" /></div>
       <div className="max-w-7xl mx-auto px-4"><AdSlot position="footer" className="pb-8" /></div>
       <NewsletterBand />
       <div className="bg-ccn-navy text-white/70 border-t-4 border-ccn-gold">
