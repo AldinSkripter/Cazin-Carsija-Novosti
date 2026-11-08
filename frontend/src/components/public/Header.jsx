@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { useWeather, wx } from "./WeatherWidget";
 import { AdSlot } from "./AdSlot";
 import { BreakingTicker } from "./BreakingTicker";
-import { RtvLive } from "./RtvLive";
+import { RtvLive, RtvPlayer } from "./RtvLive";
 
 function SearchBox({ onDone, id, dark = true }) {
   const [q, setQ] = useState("");
@@ -127,6 +127,7 @@ export function Header() {
           </div>
         </nav>
         <BreakingTicker />
+        <RtvPlayer />
       </header>
     </>
   );
