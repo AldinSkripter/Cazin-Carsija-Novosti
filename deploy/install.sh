@@ -202,10 +202,10 @@ fi
 # ---------- 8. SSL ----------
 if [ "$PLESK" = 1 ]; then
   say "Izdajem besplatni SSL (Let's Encrypt)…"
-  if plesk bin extension --exec letsencrypt cli.php -d "$DOMAIN" -d "www.$DOMAIN" -m "$ADMIN_EMAIL" >/dev/null 2>&1 \
-     || plesk bin extension --exec letsencrypt cli.php -d "$DOMAIN" -m "$ADMIN_EMAIL" >/dev/null 2>&1; then
+  if plesk bin extension --exec letsencrypt cli.php -d "$DOMAIN" -d "www.$DOMAIN" -m "$ADMIN_EMAIL" >"$D/ssl.log" 2>&1 \
+     || plesk bin extension --exec letsencrypt cli.php -d "$DOMAIN" -m "$ADMIN_EMAIL" >>"$D/ssl.log" 2>&1; then
     plesk bin site --update "$DOMAIN" -ssl-redirect true >/dev/null 2>&1 || true; ok "SSL aktivan"
-  else warn "SSL nije izdat – provjerite da DNS (A zapis) za $DOMAIN pokazuje na ovaj server, pa: Plesk → SSL/TLS → Let's Encrypt"; fi
+  else tail -n 15 "$D/ssl.log"; warn "SSL nije izdat – razlog je iznad (cijeli log: $D/ssl.log). Ili: Plesk → SSL/TLS → Let's Encrypt"; fi
 fi
 
 # ---------- 9. Dnevni backup ----------
@@ -246,7 +246,7 @@ echo -e "${G}══════════════════════�
 echo -e "${G} Portal je instaliran!${N}"
 echo -e "  Sajt:   https://$DOMAIN"
 echo -e "  Admin:  https://$DOMAIN/admin/prijava"
-if [ "${MIGRATED:-0}" = 1 ]; then echo -e "  Prijava: vaš postojeći e-mail i lozinka sa starog sajta"
+if [ "${MIGRATED:-0}" = 1 ] || [ -f data/import/backup.json ]; then echo -e "  Prijava: vaš postojeći e-mail i lozinka sa starog sajta"
 elif [ -n "${ADMIN_PASSWORD:-}" ]; then echo -e "  Prijava: $ADMIN_EMAIL / $ADMIN_PASSWORD  ${Y}(promijenite lozinku nakon prijave)${N}"; fi
 echo -e "  AI:     ${AI_PROVIDER/off/isključen (premalo RAM-a)} ${OLLAMA_MODEL:+($OLLAMA_MODEL)}"
 echo -e "  Ažuriranje: Save to GitHub → Plesk Git \"Pull Updates\" → portal se sam obnovi (log: deploy/redeploy.log)"

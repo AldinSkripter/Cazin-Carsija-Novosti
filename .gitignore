@@ -107,4 +107,5 @@ deploy/.redeploy
 deploy/redeploy.log
 deploy/plesk-nginx.conf
 deploy/install.log
+deploy/ssl.log
 
