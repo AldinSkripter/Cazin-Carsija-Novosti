@@ -10,6 +10,7 @@ import { Switch } from "../../components/ui/switch";
 import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
 
 function UserDialog({ u, roles, perms, cats, onClose, onSaved }) {
+  const { user: me } = useAuth();
   const [f, setF] = useState({ ...u, password: "" });
   const save = async () => {
     try {
@@ -25,7 +26,7 @@ function UserDialog({ u, roles, perms, cats, onClose, onSaved }) {
         <DialogTitle>{u.id ? "Uredi korisnika" : "Novi korisnik"}</DialogTitle>
         <div className="grid sm:grid-cols-2 gap-3">
           <Input placeholder="Ime i prezime" value={f.name || ""} onChange={(e) => setF({ ...f, name: e.target.value })} data-testid="user-name" />
-          <Input placeholder="E-mail" value={f.email || ""} disabled={!!u.id} onChange={(e) => setF({ ...f, email: e.target.value })} data-testid="user-email" />
+          <Input placeholder="E-mail" value={f.email || ""} disabled={!!u.id && me.role !== "super_admin"} onChange={(e) => setF({ ...f, email: e.target.value })} data-testid="user-email" />
           <Input type="password" placeholder={u.id ? "Nova lozinka (opcionalno)" : "Lozinka (min 10, veliko slovo, broj)"} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} data-testid="user-password" />
           <select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} className="border rounded-sm px-3 py-2 text-sm" data-testid="user-role">{roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}</select>
         </div>
@@ -91,6 +92,24 @@ export default function Users() {
   );
 }
 
+function ProfileCard({ user, reload, run }) {
+  const [f, setF] = useState({ name: user.name || "", email: user.email || "", current_password: "" });
+  const emailChanged = f.email.trim().toLowerCase() !== (user.email || "").toLowerCase();
+  const save = () => run(async () => { await api.put("/auth/profile", f); setF({ ...f, current_password: "" }); await reload(); }, "Profil sačuvan");
+  return (
+    <div className="bg-white border rounded-md p-5 grid gap-2 content-start lg:col-span-2" data-testid="profile-card">
+      <h2 className="font-bold mb-1">Moj profil</h2>
+      <div className="grid sm:grid-cols-2 gap-2">
+        <Input placeholder="Ime i prezime" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} data-testid="profile-name" />
+        <Input type="email" placeholder="E-mail" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} data-testid="profile-email" />
+      </div>
+      {emailChanged && <Input type="password" placeholder="Trenutna lozinka (potrebna za promjenu e-maila)" value={f.current_password} onChange={(e) => setF({ ...f, current_password: e.target.value })} data-testid="profile-current-password" />}
+      <p className="text-xs text-slate-500">Novi e-mail koristite za prijavu i za probne newsletter mailove.</p>
+      <Button className="bg-ccn-navy w-fit" onClick={save} data-testid="profile-save">Sačuvaj profil</Button>
+    </div>
+  );
+}
+
 export function Profile() {
   const { user, reload } = useAuth();
   const [setup, setSetup] = useState(null);
@@ -102,6 +121,7 @@ export function Profile() {
   const run = async (fn, msg) => { try { await fn(); toast.success(msg); } catch (e) { toast.error(errMsg(e)); } };
   return (
     <div className="grid lg:grid-cols-2 gap-5 max-w-5xl" data-testid="admin-profile">
+      <ProfileCard user={user} reload={reload} run={run} />
       <div className="bg-white border rounded-md p-5">
         <h2 className="font-bold mb-3">Dvofaktorska autentifikacija (2FA)</h2>
         {user.totp_enabled ? (

@@ -17,6 +17,7 @@ import routes_auth
 import routes_public
 import routes_articles
 import routes_admin
+import fb_import
 from seed import seed_all
 from services import init_storage
 
@@ -71,7 +72,7 @@ async def health():
     return {"ok": True}
 
 
-for r in (routes_auth.router, routes_articles.router, routes_admin.router, routes_public.router):
+for r in (routes_auth.router, routes_articles.router, routes_admin.router, routes_public.router, fb_import.router):
     app.include_router(r)
 
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),

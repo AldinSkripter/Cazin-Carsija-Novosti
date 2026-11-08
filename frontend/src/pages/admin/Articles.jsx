@@ -5,6 +5,7 @@ import { api, fmtDate, STATUS_LABELS, STATUS_COLORS } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { PageHead } from "./AdminLayout";
 import { Button } from "../../components/ui/button";
+import { FacebookImport } from "../../components/admin/FacebookImport";
 
 export default function Articles() {
   const { can } = useAuth();
@@ -16,15 +17,14 @@ export default function Articles() {
   const page = Number(params.get("page") || 1);
   const qs = params.toString();
   useEffect(() => { api.get("/public/categories").then((r) => setCats(r.data)); }, []);
-  useEffect(() => {
-    const p = Object.fromEntries(new URLSearchParams(qs));
-    api.get("/admin/articles", { params: p }).then((r) => setData(r.data));
-  }, [qs]);
+  const load = () => { api.get("/admin/articles", { params: Object.fromEntries(new URLSearchParams(qs)) }).then((r) => setData(r.data)); };
+  useEffect(() => { load(); }, [qs]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (k, v) => { v ? params.set(k, v) : params.delete(k); if (k !== "page") params.delete("page"); setParams(params); };
   const catName = (id) => cats.find((c) => c.id === id)?.name || "–";
   return (
     <div data-testid="admin-articles">
       <PageHead title="Članci" sub={`${data.total} članaka`}>
+        {can("articles.publish") && <FacebookImport onDone={load} />}
         {can("articles.create") && <Link to="/admin/clanci/novi"><Button className="bg-ccn-navy" data-testid="new-article-button"><Plus className="w-4 h-4 mr-1" />Novi članak</Button></Link>}
       </PageHead>
       <div className="flex flex-wrap gap-2 mb-4">

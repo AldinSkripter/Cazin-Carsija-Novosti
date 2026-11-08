@@ -1,4 +1,5 @@
 import io
+import re
 import base64
 import secrets as pysecrets
 from datetime import timedelta
@@ -40,6 +41,8 @@ class ProfileIn(BaseModel):
     name: str | None = None
     bio: str | None = None
     avatar: str | None = None
+    email: str | None = None
+    current_password: str | None = None
 
 
 def check_pw_policy(p: str):
@@ -178,9 +181,27 @@ async def change_pw(body: PwIn, user=Depends(get_current_user)):
 
 @router.put("/profile")
 async def profile(body: ProfileIn, user=Depends(get_current_user)):
-    upd = {k: v for k, v in body.model_dump().items() if v is not None}
+    upd = {k: v for k, v in body.model_dump(exclude={"email", "current_password"}).items() if v is not None}
+    email = (body.email or "").strip().lower()
+    if email and email != user["email"]:
+        full = await db.users.find_one({"id": user["id"]})
+        if not verify_pw(body.current_password or "", full["password_hash"]):
+            raise HTTPException(400, "Za promjenu e-maila unesite ispravnu trenutnu lozinku")
+        await ensure_email_free(email, user["id"])
+        upd["email"] = email
+    if upd.get("name") is not None and not upd["name"].strip():
+        raise HTTPException(400, "Ime ne može biti prazno")
     await db.users.update_one({"id": user["id"]}, {"$set": upd})
+    if "email" in upd:
+        await audit(user, "auth.email_changed", "user", user["id"], f"{user['email']} → {email}")
     return {"ok": True}
+
+
+async def ensure_email_free(email: str, uid: str):
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(400, "Unesite ispravnu e-mail adresu")
+    if await db.users.find_one({"email": email, "id": {"$ne": uid}, "deleted": {"$ne": True}}):
+        raise HTTPException(400, "Korisnik s tim e-mailom već postoji")
 
 
 @router.post("/2fa/setup")

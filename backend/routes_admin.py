@@ -9,7 +9,7 @@ from fastapi.responses import Response
 
 from core import (db, new_id, iso, now, slugify, sanitize_html, strip_tags, require, audit, client_ip, PERMISSIONS,
                   get_current_user, hash_pw, get_settings, fold)
-from routes_auth import check_pw_policy
+from routes_auth import check_pw_policy, ensure_email_free
 from services import process_image, ai_generate
 from newsletter import build_campaign, start_send, resolve_base, render_email
 from services import send_email
@@ -515,6 +515,12 @@ async def update_user(uid: str, body: dict, user=Depends(require("users.manage")
     upd = await validate_user_payload(body, ex)
     if uid == user["id"] and (upd.get("role", ex["role"]) != ex["role"] or upd.get("active") is False):
         raise HTTPException(400, "Ne možete promijeniti vlastitu ulogu ili deaktivirati sebe")
+    new_email = str(body.get("email") or "").strip().lower()
+    if new_email and new_email != ex["email"]:
+        if user.get("role") != "super_admin":
+            raise HTTPException(403, "Samo Super Admin može mijenjati e-mail drugih korisnika")
+        await ensure_email_free(new_email, uid)
+        upd["email"] = new_email
     if body.get("password"):
         check_pw_policy(body["password"])
         upd["password_hash"] = hash_pw(body["password"])
