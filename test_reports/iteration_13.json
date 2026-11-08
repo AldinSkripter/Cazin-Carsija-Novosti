@@ -1,0 +1,22 @@
+{
+  "summary": "Verified the FB short-text dedup fix. post_hash now returns None for texts with fewer than 80 word chars, and post_status only checks the hash when one exists. The live feed had 7 posts: 2 different 'Obavještavamo vas o smrti' notices (fb-1794145135 and fb-1794127197), 'Velike vijesti iz cazina!', 'Cazin kroz umjetnost...' and 3 junk posts. Cron auto-import brought in 4 articles: both death notices as separate articles (different ids/slugs, fb_post_hash=null, category obavjestenja) plus the 2 real news posts. Junk posts were skipped. GET /api/public/articles?category=obavjestenja returns 2 items and neither is on /api/public/home. Running cron again created no duplicates. After hard-deleting one notice, the posts list showed it as 'new' and the other as 'imported', and the next cron re-imported it. In the UI dialog (desktop 1920 and mobile 390) each post showed the right status ('Nova' / 'Već objavljeno'), the checkbox was disabled for imported posts, and a manual import of the new notice worked (result 'Objavljeno: 1').",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [{"screen": "FB import dialog", "issues": ["The top-right X close button (shadcn DialogClose) has no data-testid; fb-import-close exists only on the 'Zatvori' button in the result view"]}]
+  },
+  "test_report_links": ["/app/backend/tests/test_fb_short_text_dedup.py", "/app/test_reports/pytest/pytest_results_iter13.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "post_key uses only createdTime ('fb-{createdTime}'). If a post has no createdTime, every such post gets the key 'fb-None', and short-text posts no longer have a hash fallback, so the 2nd and later ones would be skipped as duplicates. Consider falling back to photoURL/post id.",
+    "Two different posts published in the same second would get the same key (unlikely edge case).",
+    "Hard-deleting an article (an admin action, if one exists) leaves its facebook media and versions orphaned. This is cleanup hygiene only."
+  ],
+  "updated_files": ["/app/backend/tests/test_fb_short_text_dedup.py"],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100%"},
+  "seed_data_creation": "None. Cleanup done: hard-deleted all fb_post_key articles plus their facebook media and FB-import article_versions (including 1 orphan version 'Potražnja za poslom' from an earlier run), cleared fb_ignored and the settings key fb_auto. test_fb@ccn.ba was left for the main agent to delete.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Cron /api/cron/facebook-import is fire-and-forget (it returns {ok:true} straight away). Poll settings fb_auto.value.last_run to know when it finished. Run pytest with REACT_APP_BACKEND_URL exported and -n 0. The feed changes over time (it now also contains 'Cazin kroz umjetnost'), so the expected article counts will change."
+}
