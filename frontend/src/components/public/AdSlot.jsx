@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, mediaUrl } from "../../lib/api";
+import { AdsterraBanner } from "./AdsterraBanner";
 
 const cache = {};
 const pending = {};
@@ -22,8 +23,10 @@ export function AdSlot({ position, className = "", minH = 0 }) {
     });
     return () => { live = false; };
   }, [position]);
-  if (!ad) return null;
+  const adsterra = position === "sidebar" ? <AdsterraBanner /> : ["below_article", "between_cards"].includes(position) ? <AdsterraBanner variant="native" /> : null;
+  if (!ad) return adsterra;
   return (
+    <>
     <aside className={`w-full ${className}`} data-testid={`ad-slot-${position}`} aria-label="Reklama">
       <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-1">{ad.sponsored_label || "Oglas"}</div>
       {ad.type === "image" || !ad.type ? (
@@ -38,5 +41,7 @@ export function AdSlot({ position, className = "", minH = 0 }) {
           className="w-full border-0" style={{ minHeight: minH || 250 }} loading="lazy" />
       )}
     </aside>
+    {adsterra}
+    </>
   );
 }

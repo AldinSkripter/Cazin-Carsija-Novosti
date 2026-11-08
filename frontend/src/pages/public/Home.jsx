@@ -6,6 +6,7 @@ import { useSite } from "../../lib/auth";
 import { HomeBlock, MostRead } from "../../components/public/HomeBlocks";
 import { WeatherWidget } from "../../components/public/WeatherWidget";
 import { AdSlot } from "../../components/public/AdSlot";
+import { AdsterraBanner } from "../../components/public/AdsterraBanner";
 import { NewsletterForm } from "../../components/public/NewsletterForm";
 import { Skeleton } from "../../components/ui/skeleton";
 
@@ -43,6 +44,7 @@ export default function Home() {
           <NewsletterForm />
         </aside>
       </div>
+      {!preview && <div className="mt-10"><AdsterraBanner variant="native" /></div>}
       <div className="space-y-14 mt-14">{bottom.map((b) => <HomeBlock key={b.id} b={b} />)}</div>
     </div>
   );

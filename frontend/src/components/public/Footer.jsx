@@ -103,6 +103,7 @@ export function CookieBanner() {
   const save = (analytics, marketing) => {
     const c = { analytics, marketing, at: new Date().toISOString() };
     localStorage.setItem("ccn_consent", JSON.stringify(c));
+    window.dispatchEvent(new Event("ccn-consent-change"));
     api.post("/public/consent", { ...c, visitor_id: localStorage.getItem("ccn_vid") }).catch(() => {});
     setShow(false);
     loadAnalytics(site);
