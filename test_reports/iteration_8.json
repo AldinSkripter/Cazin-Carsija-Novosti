@@ -1,0 +1,36 @@
+{
+  "summary": "Tested the hourly FB auto-import: cron auth, background ack, enable/disable, dedup (repeated, concurrent, soft-deleted), author selection, and the admin dialog UI. All 12 backend tests passed and every UI check passed. No duplicates were created; the FB article count stayed at 5 the whole time.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/admin/facebook/import", "issue": "When no author_id is set, manual import uses the logged-in user as author (import_author(user) fallback). The UI option says 'Vlasnik portala (prvi Super Admin)', and only the cron path uses the first super_admin. The label does not match the behaviour."},
+      {"endpoint": "run_import", "issue": "published_by, created_by, media uploaded_by and the version/audit actor are all set to the chosen author, not the operator who clicked import. The audit trail cannot show who actually ran a manual import."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "FacebookImport", "issue": "The fb-import-remove-samples checkbox is checked by default (useState(true)). One accidental click on 'Uvezi i objavi' soft-deletes all 8 'primjer' articles. Consider defaulting it to false.", "selector": "[data-testid='fb-import-remove-samples']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "FB import dialog", "issues": ["If the selected author is later deactivated, the backend silently falls back to another author while the select may show an empty or mismatched value. Consider showing a warning."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_fb_auto_import.py", "/app/test_reports/pytest/pytest_fb_auto.xml"],
+  "action_items": [
+    "Optional: make the manual-import fallback author match the UI label (first super_admin), or rename the option to 'Trenutni korisnik / Vlasnik'",
+    "Optional: default remove_samples checkbox to unchecked",
+    "Optional: keep the operator id in the audit entry for manual imports"
+  ],
+  "critical_code_review_comments": [
+    "IMPORT_LOCK is per-process. It works with --workers 1, and the unique partial indexes on fb_post_key and fb_post_hash protect against duplicates across workers or containers, which the concurrent test confirmed.",
+    "The dedup query deliberately ignores the deleted flag, so soft-deleted posts are never re-imported (confirmed by test).",
+    "auto_job swallows exceptions and only logs a warning. last_run is not updated when FB returns 502, so the UI can't show that a run failed. Consider storing last_error."
+  ],
+  "updated_files": ["/app/backend/tests/test_fb_auto_import.py"],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100%"},
+  "seed_data_creation": "Created one TEST_journalist user and hard-deleted it afterwards. Temporarily hard-deleted one FB article; it was re-imported with the chosen author, then its author was restored to the original. Temporarily soft-deleted another FB article and restored it. fb_auto was restored to enabled:true, author_id:null. Sample 'primjer' articles were not touched (8 active).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run with: cd /app/backend && REACT_APP_BACKEND_URL=... pytest tests/test_fb_auto_import.py -n 0 (the tests are order-dependent). Super admin test_fb@ccn.ba / TestFb12345A. The FB plugin exposes 5 posts and all 5 are imported. Leftover soft-deleted TEST_ users from iteration 7 remain in the DB."
+}

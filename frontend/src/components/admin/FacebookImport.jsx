@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 export const FacebookImport = ({ onDone }) => {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [removeSamples, setRemoveSamples] = useState(true);
+  const [removeSamples, setRemoveSamples] = useState(false);
   const [res, setRes] = useState(null);
   const [auto, setAuto] = useState(null);
   const [people, setPeople] = useState([]);
@@ -50,6 +50,7 @@ export const FacebookImport = ({ onDone }) => {
                   <div className="border-t pt-3 grid gap-1" data-testid="fb-auto-box">
                     <label className="flex gap-2 items-center font-semibold"><Switch checked={auto.enabled} onCheckedChange={toggleAuto} data-testid="fb-auto-switch" />Automatski uvoz svaki sat</label>
                     <p className="text-xs text-slate-500" data-testid="fb-auto-status">Objavljuje samo nove objave, već uvezene nikad ne duplira. Zadnja provjera: {auto.last_run ? `${fmtDate(auto.last_run)} (novih: ${auto.last_imported})` : "još nije pokrenuta"}</p>
+                    {auto.last_error && <p className="text-xs text-ccn-red" data-testid="fb-auto-error">Zadnja greška: {auto.last_error}</p>}
                     <label className="grid gap-1 text-xs font-semibold mt-2">Autor uvezenih objava (ručno i automatski)
                       <select value={auto.author_id || ""} onChange={(e) => saveAuto({ author_id: e.target.value }, "Autor sačuvan")} className="border rounded-sm px-3 py-2 text-sm font-normal" data-testid="fb-author-select">
                         <option value="">Vlasnik portala (prvi Super Admin)</option>

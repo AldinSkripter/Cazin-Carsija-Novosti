@@ -88,7 +88,7 @@ def post_hash(msg: str) -> str:
     return hashlib.sha1(re.sub(r"\s+", " ", msg).strip().lower()[:300].encode()).hexdigest()
 
 
-async def run_import(user, limit=8, remove_samples=False, auto=False):
+async def run_import(user, limit=8, remove_samples=False, auto=False, operator=None):
     async with IMPORT_LOCK:
         settings = await get_settings()
         page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
@@ -125,9 +125,9 @@ async def run_import(user, limit=8, remove_samples=False, auto=False):
             res = await db.articles.update_many({"tags": "primjer", "body": {"$regex": "primjer članka"}, "deleted": {"$ne": True}},
                                                 {"$set": {"deleted": True, "status": "archived"}})
             removed = res.modified_count
-        await db.settings.update_one({"key": "fb_auto"}, {"$set": {"value.last_run": iso(), "value.last_imported": len(imported)}}, upsert=True)
+        await db.settings.update_one({"key": "fb_auto"}, {"$set": {"value.last_run": iso(), "value.last_imported": len(imported), "value.last_error": None}}, upsert=True)
         if imported or not auto:
-            await audit(user, "facebook.import", "article", "", f"{'auto: ' if auto else ''}uvezeno {len(imported)}, preskočeno {skipped}, obrisano probnih {removed}")
+            await audit(operator or user, "facebook.import", "article", "", f"{'auto: ' if auto else ''}uvezeno {len(imported)}, preskočeno {skipped}, obrisano probnih {removed}")
         return {"imported": imported, "skipped": skipped, "removed_samples": removed}
 
 
@@ -144,8 +144,8 @@ async def import_author(fallback=None):
 
 @router.post("/import")
 async def import_posts(body: dict = Body(default={}), user=Depends(require("articles.publish"))):
-    author = await import_author(user)
-    return await run_import({**user, "id": author["id"], "name": author["name"]}, int(body.get("limit") or 8), bool(body.get("remove_samples")))
+    author = await import_author() or user
+    return await run_import({**user, "id": author["id"], "name": author["name"]}, int(body.get("limit") or 8), bool(body.get("remove_samples")), operator=user)
 
 
 @router.get("/auto")
@@ -178,6 +178,7 @@ async def auto_job():
         log.info("FB auto uvoz: %s novih, %s preskočeno", len(res["imported"]), res["skipped"])
     except Exception as e:
         log.warning("FB auto uvoz nije uspio: %s", e)
+        await db.settings.update_one({"key": "fb_auto"}, {"$set": {"value.last_error": f"{iso()}: {getattr(e, 'detail', e)}"[:300]}}, upsert=True)
 
 
 @cron_router.post("/facebook-import")
