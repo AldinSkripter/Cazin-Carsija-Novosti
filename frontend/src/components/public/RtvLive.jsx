@@ -26,7 +26,7 @@ export const RtvPlayer = () => {
   if (!open) return null;
   return (
     <Dialog open onOpenChange={setOpen}>
-      <DialogContent className="w-[calc(100vw-16px)] max-w-4xl p-3 bg-black border-0" data-testid="rtv-live-dialog">
+      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="w-[calc(100vw-16px)] max-w-4xl p-3 bg-black border-0 [&>button]:text-white [&>button]:opacity-100 [&>button]:p-2 [&>button]:-m-1 [&>button>svg]:w-5 [&>button>svg]:h-5" data-testid="rtv-live-dialog">
         <DialogTitle className="text-white text-sm flex items-center gap-2 px-1"><span className="w-2 h-2 rounded-full bg-ccn-red animate-pulse" />RTV Cazin – uživo</DialogTitle>
         <div className="relative w-full aspect-video bg-black rounded overflow-hidden">
           <iframe src={STREAM} title="RTV Cazin uživo" className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen data-testid="rtv-live-iframe" />

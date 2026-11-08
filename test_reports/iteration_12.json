@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only retest of the 'Gledaj RTV Cazin uživo' fix. MOBILE BUG IS FIXED: at 390x844, opening the mobile menu and clicking rtv-live-mobile closes the menu, and rtv-live-dialog stays open with rtv-live-iframe (src https://crt-stream.loopstudiobih.dev/embed/). It was still open after 5s, and the player showed 'Baferovanje…' (buffering) with its controls. Closing with the X and by clicking the overlay both work, and reopening works over two full rounds. On mobile the dialog is 374px wide and the iframe is 350x196.9 (ratio 1.778 = 16:9), with no horizontal overflow (scrollWidth 390 = innerWidth). On desktop at 1280 and 1920, rtv-live-button opens the dialog with the iframe (872x490.5, 16:9). Closing with the overlay or the X and reopening work at both sizes. Two minor issues: Escape does not close the dialog, and the X button is almost invisible.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "RtvPlayer dialog", "issue": "Escape key does not close the dialog. Radix auto-focuses the first focusable element, which is the cross-origin iframe (document.activeElement = rtv-live-iframe right after opening), so key events go to the iframe and never reach the dialog.", "selector": "[data-testid='rtv-live-dialog']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "RTV live dialog (all viewports)", "issues": ["The default shadcn X close button uses color rgb(11,31,59) at 0.7 opacity on a bg-black dialog, so it is almost invisible. This is a problem on mobile, where the X is the main way to close. Fix: give the close button a white colour (e.g. [&>button]:text-white on DialogContent) and a larger tap area."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Make the dialog X close button visible on the black background (text-white, opacity-100, larger hit area for mobile)",
+    "Optional: add onOpenAutoFocus={(e)=>e.preventDefault()} to DialogContent (or focus the close button) so Escape works and focus does not jump into the iframe"
+  ],
+  "critical_code_review_comments": [
+    "The event-bus approach (window 'ccn-rtv-open' event + RtvPlayer mounted outside the Sheet) correctly fixes the unmount-on-menu-close bug.",
+    "RtvPlayer unmounts on close ('if (!open) return null'). This is fine because it stops the stream, but it skips the Radix close animation. That is acceptable."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "95%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "RTV live feature verified on mobile 390, desktop 1280 and 1920. Only open items: X button contrast and Escape not closing the dialog (focus lands in the iframe)."
+}
