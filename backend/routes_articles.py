@@ -240,10 +240,11 @@ async def duplicate(aid: str, user=Depends(require("articles.create"))):
 
 @router.delete("/{aid}")
 async def delete(aid: str, user=Depends(require("articles.delete"))):
-    a = await db.articles.find_one({"id": aid}, {"title": 1, "was_published": 1})
+    a = await db.articles.find_one({"id": aid, "deleted": {"$ne": True}}, {"title": 1, "was_published": 1})
     if not a:
         raise HTTPException(404, "Članak nije pronađen")
     await db.articles.update_one({"id": aid}, {"$set": {"deleted": True, "deleted_at": iso(), "status": "archived"}})
+    await db.breaking_news.update_many({"article_id": aid}, {"$set": {"active": False}})
     await audit(user, "article.delete", "article", aid, a["title"])
     return {"ok": True}
 

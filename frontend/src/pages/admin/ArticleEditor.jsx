@@ -12,6 +12,7 @@ import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
 import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
+import { DeleteArticleButton } from "../../components/admin/DeleteArticleButton";
 
 export const toLocal = (iso) => { if (!iso) return ""; const d = new Date(iso); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 export const fromLocal = (v) => (v ? new Date(v).toISOString() : null);
@@ -88,6 +89,7 @@ export default function ArticleEditor() {
   const aRef = useRef(a);
   aRef.current = a;
   const savingRef = useRef(null);
+  const deletingRef = useRef(false);
   useEffect(() => {
     api.get("/public/categories").then((r) => setCats(r.data));
     api.get("/admin/users/directory").then((r) => setPeople(r.data));
@@ -98,6 +100,7 @@ export default function ArticleEditor() {
   const setField = (k, v) => { setA((x) => ({ ...x, [k]: v })); setDirty(true); };
   const payload = (x) => ({ ...x, category_id: x.category_id || null, tags: tagText.split(",").map((t) => t.trim()).filter(Boolean) });
   const save = useCallback(async (autosave) => {
+    if (deletingRef.current) return null;
     if (savingRef.current) return savingRef.current;
     savingRef.current = doSave(autosave).finally(() => { savingRef.current = null; });
     return savingRef.current;
@@ -142,6 +145,7 @@ export default function ArticleEditor() {
         <Button variant="outline" size="sm" onClick={() => setPreview(true)} data-testid="editor-preview"><Eye className="w-4 h-4 mr-1" />Pregled</Button>
         {a.id && <Button variant="outline" size="sm" onClick={openVersions} data-testid="editor-versions"><History className="w-4 h-4 mr-1" />Verzije</Button>}
         {a.id && can("articles.create") && <Button variant="outline" size="sm" onClick={duplicate} data-testid="editor-duplicate"><Copy className="w-4 h-4 mr-1" />Dupliraj</Button>}
+        {a.id && can("articles.delete") && <DeleteArticleButton article={a} onDeleted={() => nav("/admin/clanci", { replace: true })} beforeDelete={async () => { if (savingRef.current) await savingRef.current; }} onBusyChange={(busy) => { deletingRef.current = busy; }} testId="editor-delete" />}
         {a.status === "published" && <a href={`/vijesti/${a.slug}`} target="_blank" rel="noreferrer"><Button variant="outline" size="sm" data-testid="editor-view-live"><Globe className="w-4 h-4 mr-1" />Na portalu</Button></a>}
       </div>
       {ro && <p className="mb-4 bg-amber-50 border border-amber-200 text-amber-900 text-sm px-4 py-2 rounded-sm" data-testid="editor-readonly">Samo pregled – nemate dozvolu za uređivanje ovog članka u trenutnom statusu.</p>}

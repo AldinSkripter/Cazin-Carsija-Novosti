@@ -6,6 +6,7 @@ import { useAuth } from "../../lib/auth";
 import { PageHead } from "./AdminLayout";
 import { Button } from "../../components/ui/button";
 import { FacebookImport } from "../../components/admin/FacebookImport";
+import { DeleteArticleButton } from "../../components/admin/DeleteArticleButton";
 
 export default function Articles() {
   const { can } = useAuth();
@@ -21,6 +22,10 @@ export default function Articles() {
   useEffect(() => { load(); }, [qs]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (k, v) => { v ? params.set(k, v) : params.delete(k); if (k !== "page") params.delete("page"); setParams(params); };
   const catName = (id) => cats.find((c) => c.id === id)?.name || "–";
+  const onDeleted = () => {
+    if (data.items.length === 1 && page > 1) set("page", page - 1);
+    else load();
+  };
   return (
     <div data-testid="admin-articles">
       <PageHead title="Članci" sub={`${data.total} članaka`}>
@@ -45,7 +50,7 @@ export default function Articles() {
       <div className="bg-white border rounded-md overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr><th className="p-3">Naslov</th><th className="p-3">Status</th><th className="p-3">Kategorija</th><th className="p-3">Pregledi</th><th className="p-3">Ažurirano</th></tr>
+            <tr><th className="p-3">Naslov</th><th className="p-3">Status</th><th className="p-3">Kategorija</th><th className="p-3">Pregledi</th><th className="p-3">Ažurirano</th>{can("articles.delete") && <th className="p-3">Akcije</th>}</tr>
           </thead>
           <tbody>
             {data.items.map((a) => (
@@ -62,6 +67,7 @@ export default function Articles() {
                 <td className="p-3">{catName(a.category_id)}</td>
                 <td className="p-3">{a.views || 0}</td>
                 <td className="p-3 text-slate-500 whitespace-nowrap">{fmtDate(a.updated_at)}</td>
+                {can("articles.delete") && <td className="p-3"><DeleteArticleButton article={a} onDeleted={onDeleted} /></td>}
               </tr>
             ))}
           </tbody>
