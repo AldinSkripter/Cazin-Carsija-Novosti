@@ -40,7 +40,7 @@ function PrivacyRequest() {
         <option value="access">Pristup podacima</option><option value="delete">Brisanje podataka</option><option value="correction">Ispravka podataka</option>
       </select>
       <textarea rows={3} placeholder="Napomena" value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })} className="border rounded-sm px-3 py-2 text-sm" />
-      <button className="justify-self-start bg-ccn-navy text-white px-4 py-2 rounded-sm text-sm" data-testid="privacy-submit">Pošalji zahtjev</button>
+      <button className="justify-self-start bg-ccn-teal text-ccn-navy font-semibold px-4 py-2 rounded-sm text-sm hover:opacity-90 transition-opacity" data-testid="privacy-submit">Pošalji zahtjev</button>
     </form>
   );
 }

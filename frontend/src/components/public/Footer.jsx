@@ -55,8 +55,8 @@ export function Footer() {
             <p className="mt-5 text-sm leading-relaxed max-w-xs">{site.tagline}</p>
             <ul className="mt-5 space-y-2 text-sm">
               <li className="flex gap-2"><MapPin className="w-4 h-4 text-ccn-gold shrink-0 mt-0.5" />{site.address}</li>
-              <li className="flex gap-2"><Mail className="w-4 h-4 text-ccn-gold shrink-0 mt-0.5" />{site.contact_email}</li>
-              <li className="flex gap-2"><Phone className="w-4 h-4 text-ccn-gold shrink-0 mt-0.5" />{site.phone}</li>
+              <li className="flex gap-2"><Mail className="w-4 h-4 text-ccn-gold shrink-0 mt-0.5" /><a href={`mailto:${site.contact_email}`} className="hover:text-ccn-teal transition-colors" data-testid="footer-email">{site.contact_email}</a></li>
+              <li className="flex gap-2"><Phone className="w-4 h-4 text-ccn-gold shrink-0 mt-0.5" /><a href={`tel:${(site.phone || "").replace(/[^+\d]/g, "")}`} className="hover:text-ccn-teal transition-colors" data-testid="footer-phone">{site.phone}</a></li>
             </ul>
           </div>
           <div className="md:col-span-4">

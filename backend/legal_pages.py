@@ -132,6 +132,20 @@ PAGES = {
 <p>U radu se pridržavamo načela Kodeksa za štampu i online medije Bosne i Hercegovine.</p>
 """),
 
+    "redakcija": ("Redakcija", "Redakcija portala Cazin Čaršija Novosti – urednik i kontakt.", f"""
+<p>Portal {NAME} uređuje mali lokalni tim iz Cazina, uz pomoć saradnika i čitalaca koji nam šalju vijesti iz svojih mjesta.</p>
+<h2>Uredništvo</h2>
+<ul>
+<li><strong>Osnivač, glavni i odgovorni urednik:</strong> {OWNER}</li>
+<li><strong>E-mail redakcije:</strong> {MAIL}</li>
+<li><strong>Telefon:</strong> {TEL}</li>
+</ul>
+<h2>Saradnici i autori</h2>
+<p>Svi autorski tekstovi potpisani su imenom autora, a popis autora i njihovih članaka nalazi se na stranici <a href="/autori">Autori</a>.</p>
+<h2>Postanite saradnik</h2>
+<p>Pišete, fotografišete ili snimate i želite sarađivati s nama? Javite se na {MAIL} s kratkim predstavljanjem i primjerom svog rada.</p>
+"""),
+
     "kontakt": ("Kontakt", "Kontakt redakcije portala Cazin Čaršija Novosti.", f"""
 <p>Imate vijest, pitanje, prijedlog ili primjedbu? Javite nam se.</p>
 <ul>

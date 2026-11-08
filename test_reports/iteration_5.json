@@ -1,0 +1,35 @@
+{
+  "summary": "Frontend testing of the 8 legal/info pages plus footer (desktop 1920 and mobile 390, light and dark mode). All 8 pages (impresum, politika-privatnosti, politika-kolacica, uslovi-koristenja, ispravke-i-demantiji, kontakt, o-nama, oglasavanje) load at /stranica/<slug> with the correct H1 and document title, full Bosnian content and no placeholder text. Impresum contains Arif Civić as osnivač i izdavač and glavni i odgovorni urednik, portalcazin@gmail.com, +387 61 524 552 and Cazin. Uslovi korištenja requires both the author's name as signed on the portal and an active link to the original article. mailto:portalcazin@gmail.com and tel:+38761524552 links render as <a> in the content. The footer shows 'Impresum' -> /stranica/impresum (no 'Impressum'), plus the real email, phone and address. Footer clicks on Impresum and Uslovi korištenja go to the right pages. The privacy form submitted with TEST_privacy_iter5@example.com, type 'delete': API returned 200, the 'Zahtjev je zaprimljen' toast appeared and the form was reset. On mobile there is no horizontal overflow (scrollWidth 390), and in dark mode text, headings and lists are readable. One issue: the footer still links to /stranica/redakcija, which shows placeholder text.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "GET /api/public/pages/impressum", "issue": "The old slug now returns 404 and there is no redirect to /stranica/impresum. This only matters if the old URL was indexed or shared."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Footer 'Portal' menu -> Redakcija", "issue": "/stranica/redakcija (linked in the footer) still shows the placeholder '[Ovdje unesite tekst stranice „Redakcija“ iz admin panela → Stranice. Pravne tekstove prilagodite ...]'. Not acceptable for LIVE.", "selector": "footer a[href='/stranica/redakcija']", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Politika privatnosti form (dark mode)", "issues": ["The 'Pošalji zahtjev' button (bg-ccn-navy -> #0A1A33) sits on the form card (#0D2140) with almost no contrast, so the button outline is hard to see. Consider gold or teal for the button."]},
+      {"screen": "Footer", "issues": ["Footer email and phone are plain text, not mailto:/tel: links (they are clickable inside the page content). Making them clickable would help on mobile.", "On 390px the newsletter 'Prijavi se' button wraps onto 2 lines."]},
+      {"screen": "Global (outside scope)", "issues": ["The breaking-news ticker still shows the demo text 'PRIMJER: Ovdje se prikazuje hitna vijest – uredite je u modulu Breaking News'. Should be removed or edited before LIVE."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fill in /stranica/redakcija with real content (e.g. glavni i odgovorni urednik Arif Civić, contacts) in legal_pages.py, or remove it from footer_menu",
+    "Optional: add a redirect from /stranica/impressum to /stranica/impresum",
+    "Optional: make the footer email and phone mailto:/tel: links; improve the contrast of the privacy submit button in dark mode",
+    "Before LIVE: remove the 'PRIMJER:' demo breaking-news item"
+  ],
+  "critical_code_review_comments": [
+    "legal_pages.py UPDATED is the hardcoded string '8. novembra 2026.'. It matches the server clock (Nov 8 2026), but it will not change on later edits, so update it whenever the texts change.",
+    "Admin CrudPages.jsx subtitle still says 'Impressum' (admin-only text).",
+    "The privacy form textarea has no data-testid, and its inputs only use placeholders as labels (accessibility)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend only)", "frontend": "95%"},
+  "seed_data_creation": "Created one privacy request: email TEST_privacy_iter5@example.com, type delete, message 'TEST_ zahtjev iteracija 5' (left in place, as allowed).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Legal pages are verified. Remaining: Redakcija placeholder page linked in the footer. Dark mode is set via localStorage ccn_theme='dark'; skip the cookie banner via localStorage ccn_consent."
+}

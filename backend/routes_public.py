@@ -156,6 +156,7 @@ async def author(slug: str):
 
 @router.get("/public/pages/{slug}")
 async def page(slug: str):
+    slug = {"impressum": "impresum"}.get(slug, slug)
     p = await db.pages.find_one({"slug": slug, "published": True}, {"_id": 0})
     if not p:
         raise HTTPException(404, "Stranica nije pronađena")
