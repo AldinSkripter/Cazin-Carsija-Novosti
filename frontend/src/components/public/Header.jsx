@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { useWeather, wx } from "./WeatherWidget";
 import { AdSlot } from "./AdSlot";
 import { BreakingTicker } from "./BreakingTicker";
+import { RtvLive } from "./RtvLive";
 
 function SearchBox({ onDone, id, dark = true }) {
   const [q, setQ] = useState("");
@@ -91,6 +92,7 @@ export function Header() {
                   <Link key={m.url} to={m.url} onClick={() => setOpen(false)} className="py-3 border-b border-white/10 font-semibold hover:text-ccn-teal hover:pl-1 transition-all">{m.label}</Link>
                 ))}
                 <Link to="/prijavite-vijest" onClick={() => setOpen(false)} className="mt-5 bg-ccn-gold text-ccn-navy text-center font-bold py-3 rounded-full">Prijavite vijest</Link>
+                <RtvLive big onOpen={() => setOpen(false)} />
                 <ThemeToggle big />
               </nav>
             </SheetContent>
@@ -120,6 +122,7 @@ export function Header() {
             <Link to="/kamere" className="ml-3 shrink-0 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider bg-ccn-red/15 text-white border border-ccn-red/50 px-3 py-1.5 rounded-full hover:bg-ccn-red transition-colors" data-testid="nav-cameras-live">
               <Video className="w-3.5 h-3.5" />Kamere uživo
             </Link>
+            <RtvLive />
           </div>
         </nav>
         <BreakingTicker />
