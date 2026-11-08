@@ -109,15 +109,15 @@ export function Header() {
         </div>
         <nav className="hidden lg:block border-t border-white/[0.08] bg-ccn-navy2/40" aria-label="Glavni meni">
           <div className="max-w-7xl mx-auto px-4 flex items-center">
-            <div className="flex gap-0.5 overflow-x-auto flex-1">
+            <div className="flex gap-0 overflow-x-auto flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {menu.map((m) => (
                 <NavLink key={m.url} to={m.url} end={m.url === "/"} data-testid={`nav-${m.url.replace(/\W+/g, "-")}`}
-                  className={({ isActive }) => `relative px-3.5 py-3 text-[14px] font-semibold whitespace-nowrap transition-colors after:absolute after:left-3.5 after:right-3.5 after:bottom-0 after:h-[3px] after:rounded-t after:transition-transform after:origin-left ${isActive ? "text-white after:bg-ccn-gold after:scale-x-100" : "text-white/75 hover:text-white after:bg-ccn-teal after:scale-x-0 hover:after:scale-x-100"}`}>
+                  className={({ isActive }) => `relative px-2.5 xl:px-3.5 py-3 text-[13px] xl:text-[14px] font-semibold whitespace-nowrap transition-colors after:absolute after:left-2.5 xl:after:left-3.5 after:right-2.5 xl:after:right-3.5 after:bottom-0 after:h-[3px] after:rounded-t after:transition-transform after:origin-left ${isActive ? "text-white after:bg-ccn-gold after:scale-x-100" : "text-white/75 hover:text-white after:bg-ccn-teal after:scale-x-0 hover:after:scale-x-100"}`}>
                   {m.label}
                 </NavLink>
               ))}
             </div>
-            <Link to="/kamere" className="ml-3 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider bg-ccn-red/15 text-white border border-ccn-red/50 px-3 py-1.5 rounded-full hover:bg-ccn-red transition-colors" data-testid="nav-cameras-live">
+            <Link to="/kamere" className="ml-3 shrink-0 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider bg-ccn-red/15 text-white border border-ccn-red/50 px-3 py-1.5 rounded-full hover:bg-ccn-red transition-colors" data-testid="nav-cameras-live">
               <Video className="w-3.5 h-3.5" />Kamere uživo
             </Link>
           </div>
