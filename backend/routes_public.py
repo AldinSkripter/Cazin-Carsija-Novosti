@@ -1,4 +1,5 @@
 import os
+import io
 import asyncio
 import re
 import time
@@ -11,6 +12,7 @@ from datetime import timedelta
 
 import httpx
 import jwt
+from PIL import Image, ImageOps, ImageDraw, ImageFilter
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Form, Response
 from fastapi.responses import RedirectResponse, HTMLResponse
 from pydantic import BaseModel
@@ -502,15 +504,62 @@ async def share(slug: str, request: Request):
     a = await db.articles.find_one(public_filter({"slug": slug}), {"_id": 0})
     if not a:
         raise HTTPException(404, "Nije pronađeno")
-    img = a.get("social_image") or (a.get("featured_image") or {}).get("large") or s.get("social_image") or "/icon-512.png"
-    img = img if img.startswith("http") else base + img
+    has_img = a.get("social_image") or (a.get("featured_image") or {}).get("large")
+    img = f"{base}/api/og-image/{slug}.jpg" if has_img else f"{base}/og-image.jpg"
+    names = [u["name"] for u in await db.users.find({"id": {"$in": a.get("author_ids", [])}}, {"_id": 0, "name": 1}).to_list(10)]
     url = f"{base}/vijesti/{slug}"
     t, d = escape(a.get("seo_title") or a["title"]), escape(a.get("seo_description") or a.get("summary") or "")
+    pub = escape(a.get("published_at") or "")
+    authors = "".join(f'<meta property="article:author" content="{escape(n)}">' for n in names)
     html = (f'<!doctype html><html lang="bs"><head><meta charset="utf-8"><title>{t}</title><meta name="description" content="{d}">'
-            f'<link rel="canonical" href="{escape(a.get("canonical_url") or url)}"><meta property="og:type" content="article">'
+            f'<link rel="canonical" href="{escape(a.get("canonical_url") or url)}"><meta property="og:type" content="article"><meta property="og:locale" content="bs_BA">'
             f'<meta property="og:title" content="{t}"><meta property="og:description" content="{d}"><meta property="og:image" content="{escape(img)}">'
+            f'<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg">'
+            f'<meta property="og:image:alt" content="{t}"><meta property="article:published_time" content="{pub}">{authors}'
             f'<meta property="og:url" content="{url}"><meta property="og:site_name" content="{escape(s.get("site_name", ""))}">'
             f'<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{t}">'
             f'<meta name="twitter:description" content="{d}"><meta name="twitter:image" content="{escape(img)}">'
             f'<meta http-equiv="refresh" content="0;url={url}"></head><body><a href="{url}">{t}</a></body></html>')
     return HTMLResponse(html)
+
+
+_OG_CACHE = {}
+_OG_LOGO = os.path.join(os.path.dirname(__file__), "assets", "og-logo.png")
+
+
+def _render_og(raw: bytes) -> bytes:
+    img = ImageOps.fit(Image.open(io.BytesIO(raw)).convert("RGB"), (1200, 630), Image.LANCZOS)
+    band = Image.new("L", (1200, 630), 0)
+    ImageDraw.Draw(band).rectangle((0, 470, 1200, 630), fill=255)
+    band = band.filter(ImageFilter.GaussianBlur(40))
+    img.paste(Image.new("RGB", (1200, 630), (11, 31, 59)), (0, 0), band.point(lambda v: int(v * 0.85)))
+    logo = Image.open(_OG_LOGO).convert("RGBA")
+    logo = logo.resize((210, int(logo.size[1] * 210 / logo.size[0])), Image.LANCZOS)
+    img.paste(logo, (36, 630 - logo.size[1] - 26), logo)
+    d = ImageDraw.Draw(img)
+    d.rectangle((0, 620, 1200, 630), fill=(0, 194, 184))
+    d.rectangle((0, 620, 180, 630), fill=(225, 20, 43))
+    out = io.BytesIO()
+    img.save(out, "JPEG", quality=85, optimize=True)
+    return out.getvalue()
+
+
+@router.get("/og-image/{slug}.jpg")
+async def og_image(slug: str):
+    a = await db.articles.find_one(public_filter({"slug": slug}), {"_id": 0, "featured_image": 1, "social_image": 1, "updated_at": 1})
+    src = a and (a.get("social_image") or (a.get("featured_image") or {}).get("large") or "")
+    if not src:
+        raise HTTPException(404, "Nema slike")
+    key = (slug, a.get("updated_at"))
+    if key not in _OG_CACHE:
+        if src.startswith("/api/media/file/"):
+            raw, _ = await asyncio.to_thread(get_object, src[len("/api/media/file/"):])
+        else:
+            async with httpx.AsyncClient(timeout=20, follow_redirects=True) as c:
+                r = await c.get(src)
+                r.raise_for_status()
+                raw = r.content
+        if len(_OG_CACHE) > 300:
+            _OG_CACHE.clear()
+        _OG_CACHE[key] = await asyncio.to_thread(_render_og, raw)
+    return Response(_OG_CACHE[key], media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})

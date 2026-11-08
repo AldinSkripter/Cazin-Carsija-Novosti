@@ -35,7 +35,7 @@ export function errMsg(e) {
 export const mediaUrl = (u) => (u && u.startsWith("/api/") ? `${BACKEND}${u}` : u || "");
 export const strip = (html) => (html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 export const articleUrl = (a) => `/vijesti/${a.slug}`;
-export const shareUrl = (a) => `${BACKEND}/api/share/${a.slug}`;
+export const shareUrl = (a) => `${BACKEND}/vijesti/${a.slug}`;
 
 const MONTHS = ["januara", "februara", "marta", "aprila", "maja", "juna", "jula", "augusta", "septembra", "oktobra", "novembra", "decembra"];
 export const WEEKDAYS = ["nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"];

@@ -203,6 +203,8 @@ async def apply():
     if s:
         v = s.get("value", {})
         v["contact_email"], v["phone"], v["address"] = EMAIL, PHONE, "Cazin, Unsko-sanski kanton, Bosna i Hercegovina"
+        if v.get("social_image") in (None, "", "/icon-512.png"):
+            v["social_image"] = "/og-image.jpg"
         for item in v.get("footer_menu", []):
             if item.get("url") == "/stranica/impressum":
                 item["url"], item["label"] = "/stranica/impresum", "Impresum"

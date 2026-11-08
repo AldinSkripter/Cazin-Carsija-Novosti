@@ -16,7 +16,7 @@ export function useSeo({ title, description, image, type = "website", canonical,
     const full = title ? `${title} | ${siteName}` : `${siteName} – Vijesti iz Cazina, Krajine, BiH i svijeta`;
     document.title = full;
     const url = canonical || window.location.origin + window.location.pathname;
-    const img = image ? (image.startsWith("http") ? image : window.location.origin + image) : window.location.origin + "/icon-512.png";
+    const img = image ? (image.startsWith("http") ? image : window.location.origin + image) : window.location.origin + "/og-image.jpg";
     setMeta("name", "description", description || "Najnovije vijesti iz Cazina, Unsko-sanskog kantona, Bosne i Hercegovine, regiona i svijeta.");
     setMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large");
     setMeta("property", "og:title", title || siteName);

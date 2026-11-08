@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Eye, RefreshCw, Facebook, Twitter, Link2, MessageCircle, Flag, BookOpen } from "lucide-react";
+import { Clock, Eye, RefreshCw, Flag, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { api, errMsg, fmtDate, mediaUrl, shareUrl, strip } from "../../lib/api";
+import { Share, ShareBottom, ReuseBox } from "./ShareReuse";
+import { api, errMsg, fmtDate, mediaUrl, strip } from "../../lib/api";
 import { ArticleCard, CatPill } from "./ArticleCard";
 import { AdSlot } from "./AdSlot";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
@@ -12,28 +13,6 @@ function youtubeEmbed(url) {
   return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null;
 }
 
-function Share({ a }) {
-  const u = encodeURIComponent(shareUrl(a));
-  const t = encodeURIComponent(a.title);
-  const links = [
-    ["facebook", Facebook, `https://www.facebook.com/sharer/sharer.php?u=${u}`],
-    ["x", Twitter, `https://twitter.com/intent/tweet?url=${u}&text=${t}`],
-    ["whatsapp", MessageCircle, `https://wa.me/?text=${t}%20${u}`],
-    ["viber", MessageCircle, `viber://forward?text=${t}%20${u}`],
-  ];
-  return (
-    <div className="flex gap-2" data-testid="share-buttons">
-      {links.map(([k, I, href]) => (
-        <a key={k} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Podijeli na ${k}`} data-testid={`share-${k}`}
-          className="w-9 h-9 rounded-full bg-ccn-navy text-white flex items-center justify-center hover:bg-ccn-teal hover:text-ccn-navy transition-colors">
-          <I className="w-4 h-4" />
-        </a>
-      ))}
-      <button onClick={() => { navigator.clipboard?.writeText(window.location.href); toast.success("Link kopiran"); }} aria-label="Kopiraj link" data-testid="share-copy"
-        className="w-9 h-9 rounded-full bg-ccn-mist flex items-center justify-center hover:bg-ccn-gold transition-colors"><Link2 className="w-4 h-4" /></button>
-    </div>
-  );
-}
 
 function Gallery({ items }) {
   const [open, setOpen] = useState(null);
@@ -187,6 +166,8 @@ export function ArticleView({ a, preview = false }) {
           {a.tags.map((t) => <Link key={t} to={`/tema/${encodeURIComponent(t)}`} className="text-sm px-3 py-1 bg-ccn-mist rounded-full hover:bg-ccn-teal">#{t}</Link>)}
         </div>
       )}
+      {!preview && <ShareBottom a={a} />}
+      {!preview && <ReuseBox a={a} />}
       {!preview && <AuthorCard authors={a.authors} />}
       {!preview && <AdSlot position="below_article" className="mt-8" />}
       {!preview && a.comments_open && <Comments a={a} />}
