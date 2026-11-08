@@ -30,7 +30,9 @@ INDEXES = {
     "users": [IndexModel([("email", ASCENDING)], unique=True), IndexModel([("id", ASCENDING)], unique=True), IndexModel([("slug", ASCENDING)])],
     "articles": [IndexModel([("id", ASCENDING)], unique=True), IndexModel([("slug", ASCENDING)]), IndexModel([("status", ASCENDING), ("published_at", DESCENDING)]),
                  IndexModel([("category_id", ASCENDING)]), IndexModel([("tags_folded", ASCENDING)]), IndexModel([("views", DESCENDING)]),
-                 IndexModel([("updated_at", DESCENDING)])],
+                 IndexModel([("updated_at", DESCENDING)]),
+                 IndexModel([("fb_post_key", ASCENDING)], unique=True, partialFilterExpression={"fb_post_key": {"$type": "string"}}),
+                 IndexModel([("fb_post_hash", ASCENDING)], unique=True, partialFilterExpression={"fb_post_hash": {"$type": "string"}})],
     "article_versions": [IndexModel([("article_id", ASCENDING), ("version", DESCENDING)])],
     "categories": [IndexModel([("slug", ASCENDING)], unique=True)],
     "sessions": [IndexModel([("id", ASCENDING)]), IndexModel([("user_id", ASCENDING)])],
@@ -72,7 +74,7 @@ async def health():
     return {"ok": True}
 
 
-for r in (routes_auth.router, routes_articles.router, routes_admin.router, routes_public.router, fb_import.router):
+for r in (routes_auth.router, routes_articles.router, routes_admin.router, routes_public.router, fb_import.router, fb_import.cron_router):
     app.include_router(r)
 
 app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),

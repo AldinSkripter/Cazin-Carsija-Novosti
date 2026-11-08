@@ -10,6 +10,7 @@ if [ -d ../.git ] && [ "$(stat -c %U ../.git)" = root ]; then git -C .. pull --f
 sed "s/__SECRET__/$(grep ^WEBHOOK_CRON_SECRET= .env | cut -d= -f2)/g" crontab.template > crontab; chmod 600 crontab
 bash backup.sh
 docker compose up -d --build --remove-orphans
+docker compose restart cron >/dev/null 2>&1 || true
 for i in $(seq 1 60); do curl -fs "http://127.0.0.1:$(grep ^APP_PORT= .env | cut -d= -f2)/api/health" >/dev/null && break; sleep 3; done
 if [ ! -f data/import/.legal_v1 ]; then docker compose exec -T backend python legal_pages.py && touch data/import/.legal_v1; fi
 docker image prune -f >/dev/null

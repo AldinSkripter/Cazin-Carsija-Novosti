@@ -1,5 +1,8 @@
 import re
+import os
+import hmac
 import json
+import hashlib
 import logging
 import html
 import asyncio
@@ -8,13 +11,16 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body, Request
+from pymongo.errors import DuplicateKeyError
 
 from core import db, new_id, iso, require, audit, get_settings
 from services import process_image
 from routes_articles import ArticleIn, prepare, save_version
 
 router = APIRouter(prefix="/api/admin/facebook")
+cron_router = APIRouter(prefix="/api/cron")
+IMPORT_LOCK = asyncio.Lock()
 log = logging.getLogger("fb_import")
 SMALL = {"za", "na", "u", "i", "s", "sa", "o", "od", "do", "iz", "po", "uz", "je", "se", "li", "ne", "a", "te", "ili", "pri", "ko", "što", "sve", "će", "su", "bez", "čak", "ali", "kad", "ima"}
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
@@ -78,39 +84,109 @@ async def save_image(url: str, user):
     return {"id": mid, **variants, "alt": "", "credit": doc["credit"]}
 
 
+def post_hash(msg: str) -> str:
+    return hashlib.sha1(re.sub(r"\s+", " ", msg).strip().lower()[:300].encode()).hexdigest()
+
+
+async def run_import(user, limit=8, remove_samples=False, auto=False):
+    async with IMPORT_LOCK:
+        settings = await get_settings()
+        page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
+        posts = (await fetch_posts(page))[:limit]
+        cat = await db.categories.find_one({"slug": "cazin"}, {"id": 1}) or await db.categories.find_one({}, {"id": 1})
+        imported, skipped = [], 0
+        for p in reversed(posts):
+            key, h = f"fb-{p.get('createdTime')}", post_hash(p["message"])
+            if await db.articles.find_one({"$or": [{"fb_post_key": key}, {"fb_post_hash": h}]}, {"_id": 1}):
+                skipped += 1
+                continue
+            title, summary, html_body, tags = parse_post(p["message"])
+            img = None
+            if p.get("photoURL"):
+                try:
+                    img = await save_image(p["photoURL"], user)
+                except Exception as e:
+                    log.warning("FB slika nije preuzeta: %s", e)
+            aid = new_id()
+            data = await prepare(ArticleIn(title=title, summary=summary, body=html_body, tags=tags, category_id=cat and cat["id"],
+                                           source="Facebook stranica Cazin Čaršija Novosti", featured_image=img).model_dump(), aid, user)
+            pub = datetime.fromtimestamp(p["createdTime"], timezone.utc).isoformat() if p.get("createdTime") else iso()
+            data.update(id=aid, status="published", published_at=pub, published_by=user["id"], was_published=True, created_by=user["id"],
+                        created_at=iso(), views=0, deleted=False, fb_post_key=key, fb_post_hash=h)
+            try:
+                await db.articles.insert_one(data)
+            except DuplicateKeyError:
+                skipped += 1
+                continue
+            await save_version(data, user, "Automatski uvezeno sa Facebooka" if auto else "Uvezeno sa Facebooka")
+            imported.append(title)
+        removed = 0
+        if remove_samples:
+            res = await db.articles.update_many({"tags": "primjer", "body": {"$regex": "primjer članka"}, "deleted": {"$ne": True}},
+                                                {"$set": {"deleted": True, "status": "archived"}})
+            removed = res.modified_count
+        await db.settings.update_one({"key": "fb_auto"}, {"$set": {"value.last_run": iso(), "value.last_imported": len(imported)}}, upsert=True)
+        if imported or not auto:
+            await audit(user, "facebook.import", "article", "", f"{'auto: ' if auto else ''}uvezeno {len(imported)}, preskočeno {skipped}, obrisano probnih {removed}")
+        return {"imported": imported, "skipped": skipped, "removed_samples": removed}
+
+
+async def auto_state():
+    s = await db.settings.find_one({"key": "fb_auto"}, {"_id": 0}) or {}
+    return {"enabled": True, "last_run": None, "last_imported": 0, "author_id": None, **(s.get("value") or {})}
+
+
+async def import_author(fallback=None):
+    st = await auto_state()
+    u = st.get("author_id") and await db.users.find_one({"id": st["author_id"], "active": True, "deleted": {"$ne": True}}, {"_id": 0, "id": 1, "name": 1})
+    return u or fallback or await db.users.find_one({"role": "super_admin", "active": True, "deleted": {"$ne": True}}, {"_id": 0, "id": 1, "name": 1}, sort=[("created_at", 1)])
+
+
 @router.post("/import")
 async def import_posts(body: dict = Body(default={}), user=Depends(require("articles.publish"))):
-    settings = await get_settings()
-    page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
-    posts = (await fetch_posts(page))[: int(body.get("limit") or 8)]
-    cat = await db.categories.find_one({"slug": "cazin"}, {"id": 1}) or await db.categories.find_one({}, {"id": 1})
-    imported, skipped = [], 0
-    for p in reversed(posts):
-        key = f"fb-{p.get('createdTime')}"
-        if await db.articles.find_one({"fb_post_key": key}):
-            skipped += 1
-            continue
-        title, summary, html_body, tags = parse_post(p["message"])
-        img = None
-        if p.get("photoURL"):
-            try:
-                img = await save_image(p["photoURL"], user)
-            except Exception as e:
-                log.warning("FB slika nije preuzeta: %s", e)
-                img = None
-        aid = new_id()
-        data = await prepare(ArticleIn(title=title, summary=summary, body=html_body, tags=tags, category_id=cat and cat["id"],
-                                       source="Facebook stranica Cazin Čaršija Novosti", featured_image=img).model_dump(), aid, user)
-        pub = datetime.fromtimestamp(p.get("createdTime") or 0, timezone.utc).isoformat() if p.get("createdTime") else iso()
-        data.update(id=aid, status="published", published_at=pub, published_by=user["id"], was_published=True, created_by=user["id"],
-                    created_at=iso(), views=0, deleted=False, fb_post_key=key)
-        await db.articles.insert_one(data)
-        await save_version(data, user, "Uvezeno sa Facebooka")
-        imported.append(title)
-    removed = 0
-    if body.get("remove_samples"):
-        res = await db.articles.update_many({"tags": "primjer", "body": {"$regex": "primjer članka"}, "deleted": {"$ne": True}},
-                                            {"$set": {"deleted": True, "status": "archived"}})
-        removed = res.modified_count
-    await audit(user, "facebook.import", "article", "", f"uvezeno {len(imported)}, preskočeno {skipped}, obrisano probnih {removed}")
-    return {"imported": imported, "skipped": skipped, "removed_samples": removed}
+    author = await import_author(user)
+    return await run_import({**user, "id": author["id"], "name": author["name"]}, int(body.get("limit") or 8), bool(body.get("remove_samples")))
+
+
+@router.get("/auto")
+async def get_auto(user=Depends(require("articles.publish"))):
+    return await auto_state()
+
+
+@router.put("/auto")
+async def set_auto(body: dict = Body(...), user=Depends(require("articles.publish"))):
+    upd = {}
+    if "enabled" in body:
+        upd["value.enabled"] = bool(body["enabled"])
+    if "author_id" in body:
+        if body["author_id"] and not await db.users.find_one({"id": body["author_id"], "active": True, "deleted": {"$ne": True}}):
+            raise HTTPException(400, "Nepoznat autor")
+        upd["value.author_id"] = body["author_id"] or None
+    await db.settings.update_one({"key": "fb_auto"}, {"$set": upd}, upsert=True)
+    await audit(user, "facebook.auto", "settings", "fb_auto", json.dumps(body, ensure_ascii=False)[:200])
+    return await auto_state()
+
+
+async def auto_job():
+    if not (await auto_state())["enabled"]:
+        return
+    owner = await import_author()
+    if not owner:
+        return
+    try:
+        res = await run_import(owner, 8, auto=True)
+        log.info("FB auto uvoz: %s novih, %s preskočeno", len(res["imported"]), res["skipped"])
+    except Exception as e:
+        log.warning("FB auto uvoz nije uspio: %s", e)
+
+
+@cron_router.post("/facebook-import")
+async def cron_fb(request: Request):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    auth = request.headers.get("authorization", "")
+    if not auth.startswith("Bearer ") or not hmac.compare_digest(auth[7:].encode(), os.environ["WEBHOOK_CRON_SECRET"].encode()):
+        raise HTTPException(401, "Unauthorized")
+    if IMPORT_LOCK.locked():
+        return {"ok": True, "busy": True}
+    asyncio.create_task(auto_job())
+    return {"ok": True}

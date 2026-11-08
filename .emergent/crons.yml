@@ -11,7 +11,12 @@ crons:
     description: "Šalje sedmični pregled najčitanijih vijesti pretplatnicima nedjeljom u 19h"
     cron: "0 19 * * 0"
     timezone: "Europe/Sarajevo"
-    endpoint: "{{BASE_URL}}/api/cron/newsletter/weekly"
+    enabled: true
+  - name: fb-auto-import
+    description: "Svaki sat preuzima samo nove objave sa Facebook stranice i objavljuje ih (bez duplikata)"
+    cron: "7 * * * *"
+    timezone: "Europe/Sarajevo"
+    endpoint: "{{BASE_URL}}/api/cron/facebook-import"
     method: POST
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
     enabled: true
