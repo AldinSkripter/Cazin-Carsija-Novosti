@@ -45,7 +45,7 @@ async def enrich(items, cats=None):
 
 
 async def category_ids_with_children(slug):
-    cat = await db.categories.find_one({"$or": [{"slug": slug}, {"old_slugs": slug}]}, {"_id": 0})
+    cat = await db.categories.find_one({"slug": slug}, {"_id": 0}) or await db.categories.find_one({"old_slugs": slug}, {"_id": 0})
     if not cat:
         return None, []
     kids = await db.categories.find({"parent_id": cat["id"]}, {"_id": 0, "id": 1}).to_list(200)

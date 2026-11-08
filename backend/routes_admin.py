@@ -70,6 +70,7 @@ async def cat_hook(doc, user, ex):
     doc["slug"] = slugify(doc.get("slug") or doc.get("name", "") or (ex or {}).get("name", ""))
     if await db.categories.find_one({"slug": doc["slug"], "id": {"$ne": (ex or doc)["id"]}}):
         raise HTTPException(400, "Slug već postoji")
+    await db.categories.update_many({"old_slugs": doc["slug"], "id": {"$ne": (ex or doc)["id"]}}, {"$pull": {"old_slugs": doc["slug"]}})
     if ex and ex.get("slug") and ex["slug"] != doc["slug"]:
         await rename_category_links(ex["slug"], doc["slug"], doc.get("name") or ex.get("name"), ex.get("name"))
         doc["old_slugs"] = [s for s in dict.fromkeys([*(ex.get("old_slugs") or []), ex["slug"]]) if s != doc["slug"]]
@@ -77,7 +78,8 @@ async def cat_hook(doc, user, ex):
 
 
 async def remove_category_links(cat):
-    slugs = {cat["slug"], *(cat.get("old_slugs") or [])}
+    owned = {c["slug"] async for c in db.categories.find({}, {"slug": 1})}
+    slugs = {cat["slug"], *(cat.get("old_slugs") or [])} - owned
     urls = {f"/kategorija/{s}" for s in slugs}
     hp = await db.settings.find_one({"key": "homepage"}, {"_id": 0})
     if hp:

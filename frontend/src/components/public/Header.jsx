@@ -73,7 +73,7 @@ export function Header() {
     return () => window.removeEventListener("scroll", on);
   }, []);
   const known = new Set(cats.flatMap((c) => [c.slug, ...(c.old_slugs || [])]));
-  const menu = (site.main_menu || [{ label: "Naslovna", url: "/" }]).filter((m) => !cats.length || !m.url.startsWith("/kategorija/") || known.has(m.url.slice(12)));
+  const menu = (site.main_menu || [{ label: "Naslovna", url: "/" }]).filter((m) => !cats.length || !m.url?.startsWith("/kategorija/") || known.has(m.url.slice(12)));
   return (
     <>
       <a href="#main" className="skip-link">Preskoči na sadržaj</a>

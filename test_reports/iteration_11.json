@@ -1,0 +1,36 @@
+{
+  "summary": "Tested category delete -> menu/homepage cleanup, Header ghost-link filter, and slug-rename regression (backend pytest + Playwright at 1280 and 390). Backend 5/5 passed. Deleting a TEST category removes its main_menu and footer_menu links and its homepage blocks (draft and published). /api/public/home stays 200, even with a dangling block. Rename updates the menu URL and label and the block slug, stores old_slugs, and the old slug still returns articles (200). The UI removes the deleted category from the desktop and mobile menus. /kategorija/bosna-i-hercegovina redirects to /kategorija/bih. A deleted category's URL shows the 404 page. IMPORTANT: at first the Header.jsx menu filter was NOT live. The dev server was still serving an old bundle (const menu = site.main_menu || ...) because webpack missed the file change, and touching the file did not help. I restarted the frontend with supervisorctl; after that the filter worked and a ghost /kategorija/<nonexistent> link was hidden. I also found one edge-case bug: a new category can reuse another category's old slug.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/admin/categories/{id} (remove_category_links) + cat_hook", "issue": "Old-slug collision. Category A is renamed alfa -> beta (old_slugs ['alfa']). A new category B is created with slug 'alfa', which is allowed because cat_hook only checks the live slug. Deleting A then removes B's /kategorija/alfa menu link (and any homepage block with category_slug 'alfa'), because remove_category_links includes A's old_slugs. Reproduced with tests/edge_old_slug_reuse.py. category_ids_with_children ($or slug/old_slugs find_one) can also resolve 'alfa' to the wrong category."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Hot reload", "issue": "The Header.jsx change (menu filter) was not in the served bundle until I ran sudo supervisorctl restart frontend. The webpack watcher missed it. Now fixed. Restart the frontend after edits if changes do not show up.", "affected_selectors": ["header nav a", "[data-testid=mobile-nav] a"]}
+    ],
+    "design_issues": [
+      {"screen": "Header menu", "issues": ["The menu label for /kategorija/bih is still 'Bosna i Hercegovina' while the category name is 'BiH'. This may be intended, since menu labels are free text, but it is inconsistent with the page H1 'BiH'."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_category_links.py", "/app/backend/tests/ui_cat_helper.py", "/app/backend/tests/edge_old_slug_reuse.py", "/app/test_reports/pytest/iter11.xml"],
+  "action_items": [
+    "In cat_hook: when a category takes a slug, $pull that slug from every other category's old_slugs (or reject the slug if another category has it in old_slugs).",
+    "In remove_category_links: only remove old_slugs that no other category owns as its slug.",
+    "In category_ids_with_children: look for an exact slug match first and fall back to old_slugs only if none is found.",
+    "Header filter: guard m.url (m.url?.startsWith) so a menu item without a URL does not crash the header.",
+    "Optional: deleting a parent category leaves its children with a dangling parent_id. Consider clearing parent_id on delete."
+  ],
+  "critical_code_review_comments": [
+    "routes_admin crud._delete: the delete happens before on_delete. If on_delete fails, the links are not cleaned, though heal_category_links on startup partly covers this.",
+    "seed.heal_category_links second loop: it adds a guessed old_slug derived from seo_title for every category. Arbitrary seo_titles can create spurious old_slugs, which make the collision above more likely."
+  ],
+  "updated_files": ["/app/backend/tests/test_category_links.py", "/app/backend/tests/ui_cat_helper.py", "/app/backend/tests/edge_old_slug_reuse.py"],
+  "success_rate": {"backend": "100% (5/5) core; 1 minor edge-case bug", "frontend": "100% after frontend restart"},
+  "seed_data_creation": "Temporary TEST categories (test-rubrika, test-stara/test-nova, test-alfa/test-beta), TEST menu items and TEST_ homepage blocks were created and all removed. Verified: 0 test-* categories and 0 TEST blocks remain, and main_menu is back to its original state. I did not touch the real categories, the BiH category or the test_fb user.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && python -m pytest tests/test_category_links.py -p no:xdist -o addopts=''. Homepage blocks are injected via Mongo $push to avoid publishing the user's draft. Desktop nav testid: nav-<url with non-word chars replaced by '-'>, e.g. nav--kategorija-bih. Mobile: data-testid=mobile-menu-button then mobile-nav."
+}
