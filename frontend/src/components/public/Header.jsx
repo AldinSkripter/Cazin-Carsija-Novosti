@@ -103,9 +103,9 @@ export function Header() {
           </Link>
           {!scrolled && site.tagline && <p className="hidden xl:block text-white/45 text-[13px] italic font-serif-news max-w-[220px] leading-snug border-l border-white/15 pl-5">{site.tagline}</p>}
           <div className="flex-1" />
-          <div className="hidden md:block w-[300px] xl:w-[340px]"><SearchBox id="header-search" /></div>
+          <div className="hidden md:block w-[240px] xl:w-[340px]"><SearchBox id="header-search" /></div>
           <div className="hidden lg:block"><RtvLive /></div>
-          <Link to="/prijavite-vijest" className="hidden lg:inline-flex items-center gap-2 whitespace-nowrap bg-ccn-gold text-ccn-navy font-bold text-sm px-5 py-2.5 rounded-full hover:bg-white hover:-translate-y-0.5 transition-all" data-testid="header-submit-news">
+          <Link to="/prijavite-vijest" className="hidden lg:inline-flex shrink-0 items-center gap-2 whitespace-nowrap bg-ccn-gold text-ccn-navy font-bold text-sm px-4 py-2.5 rounded-full hover:bg-white hover:-translate-y-0.5 transition-all" data-testid="header-submit-news">
             <PenLine className="w-4 h-4" />Prijavite vijest
           </Link>
           <Link to="/pretraga" className="md:hidden text-white p-1" aria-label="Pretraga" data-testid="mobile-search-link"><Search className="w-5 h-5" /></Link>
@@ -115,7 +115,7 @@ export function Header() {
             <div className="flex gap-0 overflow-x-auto flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {menu.filter((m) => m.url !== "/kamere").map((m) => (
                 <NavLink key={m.url} to={m.url} end={m.url === "/"} data-testid={`nav-${m.url.replace(/\W+/g, "-")}`}
-                  className={({ isActive }) => `relative px-2.5 xl:px-3.5 py-3 text-[13px] xl:text-[14px] font-semibold whitespace-nowrap transition-colors after:absolute after:left-2.5 xl:after:left-3.5 after:right-2.5 xl:after:right-3.5 after:bottom-0 after:h-[3px] after:rounded-t after:transition-transform after:origin-left ${isActive ? "text-white after:bg-ccn-gold after:scale-x-100" : "text-white/75 hover:text-white after:bg-ccn-teal after:scale-x-0 hover:after:scale-x-100"}`}>
+                  className={({ isActive }) => `relative px-2 xl:px-3.5 py-3 text-[13px] xl:text-[14px] font-semibold whitespace-nowrap transition-colors after:absolute after:left-2 xl:after:left-3.5 after:right-2 xl:after:right-3.5 after:bottom-0 after:h-[3px] after:rounded-t after:transition-transform after:origin-left ${isActive ? "text-white after:bg-ccn-gold after:scale-x-100" : "text-white/75 hover:text-white after:bg-ccn-teal after:scale-x-0 hover:after:scale-x-100"}`}>
                   {m.label}
                 </NavLink>
               ))}

@@ -110,3 +110,4 @@ deploy/install.log
 deploy/ssl.log
 
 frontend/node_modules/.cache/default-development/9.pack
+frontend/node_modules/.cache/default-development/6.pack
