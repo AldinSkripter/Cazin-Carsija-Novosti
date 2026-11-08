@@ -103,8 +103,11 @@ async def save_image(url: str, user):
     return {"id": mid, **variants, "alt": "", "credit": doc["credit"]}
 
 
-def post_hash(msg: str) -> str:
-    return hashlib.sha1(re.sub(r"\s+", " ", msg).strip().lower()[:300].encode()).hexdigest()
+def post_hash(msg: str):
+    norm = re.sub(r"\s+", " ", msg).strip().lower()
+    if len(re.sub(r"[^\w]", "", norm)) < 80:
+        return None
+    return hashlib.sha1(norm[:300].encode()).hexdigest()
 
 
 JUNK = re.compile(r"\b(traži se posao|tražim posao|potražnja za poslom|traži posao|stan za iznajmljivanje|stan za izdavanje|izdaje se (stan|kuća|soba|poslovni|apartman|garsonjera)|izdajem|iznajmljuje se|traži se stan|tražim stan|na prodaju|prodajem|prodaje se|kupujem|mali oglas|mali oglasi)\b", re.I)
@@ -216,7 +219,8 @@ def post_key(p) -> str:
 
 
 async def post_status(key: str, h: str) -> str:
-    if await db.articles.find_one({"$or": [{"fb_post_key": key}, {"fb_post_hash": h}]}, {"_id": 1}):
+    q = [{"fb_post_key": key}] + ([{"fb_post_hash": h}] if h else [])
+    if await db.articles.find_one({"$or": q}, {"_id": 1}):
         return "imported"
     return "ignored" if await db.fb_ignored.find_one({"key": key}, {"_id": 1}) else "new"
 
