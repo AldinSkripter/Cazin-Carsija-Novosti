@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Navigate } from "react-router-dom";
 import { api } from "../../lib/api";
 import { useSeo } from "../../lib/seo";
 import { useSite } from "../../lib/auth";
@@ -53,8 +53,10 @@ export default function ListingPage({ mode }) {
     if (mode === "author") api.get(`/public/authors/${slug}`).then((r) => setMeta(r.data)).catch(() => setErr(true));
   }, [mode, slug, tag, page, qs]);
   const cat = mode === "category" ? cats.find((c) => c.slug === slug) : null;
+  const moved = mode === "category" && !cat ? cats.find((c) => (c.old_slugs || []).includes(slug)) : null;
   const title = { category: cat?.name, tag: `#${tag}`, author: meta?.name, search: "Pretraga", archive: "Arhiva vijesti" }[mode];
   useSeo({ siteName: site.site_name, title: cat?.seo_title?.split(" – ")[0] || title, description: cat?.seo_description || cat?.description, noindex: mode === "search" });
+  if (moved) return <Navigate to={`/kategorija/${moved.slug}`} replace />;
   if (err) return <NotFound />;
   const subs = cat ? cats.filter((c) => c.parent_id === cat.id) : [];
   const pages = data ? Math.ceil(data.total / 18) : 0;

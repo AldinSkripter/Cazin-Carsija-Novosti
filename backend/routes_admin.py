@@ -69,6 +69,7 @@ async def cat_hook(doc, user, ex):
         raise HTTPException(400, "Slug već postoji")
     if ex and ex.get("slug") and ex["slug"] != doc["slug"]:
         await rename_category_links(ex["slug"], doc["slug"], doc.get("name") or ex.get("name"), ex.get("name"))
+        doc["old_slugs"] = [s for s in dict.fromkeys([*(ex.get("old_slugs") or []), ex["slug"]]) if s != doc["slug"]]
     return doc
 
 
@@ -88,7 +89,7 @@ async def rename_category_links(old, new, name, old_name):
             for m in s.get(k) or []:
                 if m.get("url") == f"/kategorija/{old}":
                     m["url"] = f"/kategorija/{new}"
-                    if m.get("label") == old_name:
+                    if m.get("label") == old_name or (old_name is None and slugify(m.get("label", "")) == old):
                         m["label"] = name
         await db.settings.update_one({"key": "site"}, {"$set": {"value": s}})
 

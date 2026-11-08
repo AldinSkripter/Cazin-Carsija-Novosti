@@ -88,7 +88,12 @@ async def heal_category_links():
         match = [c for c in cats if old in (slugify((c.get("description") or "").replace("Vijesti –", "")), slugify((c.get("seo_title") or "").split(" – ")[0]))]
         if len(match) == 1:
             await rename_category_links(old, match[0]["slug"], match[0]["name"], None)
+            await db.categories.update_one({"slug": match[0]["slug"]}, {"$addToSet": {"old_slugs": old}})
             log.info("Popravljen link rubrike %s -> %s", old, match[0]["slug"])
+    for c in cats:
+        guess = slugify((c.get("seo_title") or "").split(" – ")[0])
+        if guess and guess != c["slug"] and guess not in slugs:
+            await db.categories.update_one({"slug": c["slug"]}, {"$addToSet": {"old_slugs": guess}})
 
 
 async def ensure_notices_category():
