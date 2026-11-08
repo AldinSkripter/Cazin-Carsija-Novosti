@@ -13,8 +13,8 @@ crons:
     timezone: "Europe/Sarajevo"
     enabled: true
   - name: fb-auto-import
-    description: "Svaki sat preuzima samo nove objave sa Facebook stranice i objavljuje ih (bez duplikata)"
-    cron: "7 * * * *"
+    description: "Svakih 15 minuta preuzima samo nove objave sa Facebook stranice i objavljuje ih (bez duplikata)"
+    cron: "*/15 * * * *"
     timezone: "Europe/Sarajevo"
     endpoint: "{{BASE_URL}}/api/cron/facebook-import"
     method: POST

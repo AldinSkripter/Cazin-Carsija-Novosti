@@ -47,6 +47,7 @@ INDEXES = {
     "redirects": [IndexModel([("from_path", ASCENDING)])],
     "settings": [IndexModel([("key", ASCENDING)], unique=True)],
     "fb_ignored": [IndexModel([("key", ASCENDING)], unique=True)],
+    "fb_posts": [IndexModel([("key", ASCENDING)], unique=True), IndexModel([("createdTime", DESCENDING)])],
     "roles": [IndexModel([("key", ASCENDING)], unique=True)],
 }
 

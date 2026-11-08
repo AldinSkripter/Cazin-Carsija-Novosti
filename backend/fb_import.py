@@ -61,7 +61,7 @@ def parse_post(msg: str):
     return title, summary, body, tags[:10]
 
 
-async def fetch_posts(page_url: str) -> list:
+async def fetch_live(page_url: str) -> list:
     url = f"https://www.facebook.com/plugins/page.php?href={quote(page_url, safe='')}&tabs=timeline&width=500&height=3000&locale=bs_BA"
     async with httpx.AsyncClient(timeout=25, follow_redirects=True, headers={"User-Agent": UA, "Accept-Language": "bs,hr;q=0.9,en;q=0.8"}) as c:
         r = await c.get(url)
@@ -70,6 +70,25 @@ async def fetch_posts(page_url: str) -> list:
         raise HTTPException(502, "Facebook trenutno ne vraća objave stranice. Pokušajte ponovo za nekoliko minuta.")
     posts, _ = json.JSONDecoder().raw_decode(r.text[i + len('"timelinePosts":'):])
     return [p for p in posts if (p.get("message") or "").strip()]
+
+
+CACHE_FIELDS = ("message", "createdTime", "photoURL", "attachmentType")
+
+
+async def fetch_posts(page_url: str, hours: int = 24) -> list:
+    try:
+        live = await fetch_live(page_url)
+    except HTTPException:
+        live = []
+    for p in live:
+        await db.fb_posts.update_one({"key": post_key(p)}, {"$set": {k: p.get(k) for k in CACHE_FIELDS}, "$setOnInsert": {"first_seen": iso()}}, upsert=True)
+    since = datetime.now(timezone.utc).timestamp() - hours * 3600
+    cached = await db.fb_posts.find({"createdTime": {"$gte": since}}, {"_id": 0}).to_list(500)
+    if not live and not cached:
+        raise HTTPException(502, "Facebook trenutno ne vraća objave stranice. Pokušajte ponovo za nekoliko minuta.")
+    merged = {post_key(p): p for p in cached}
+    merged.update({post_key(p): p for p in live})
+    return sorted(merged.values(), key=lambda p: p.get("createdTime") or 0, reverse=True)
 
 
 async def save_image(url: str, user):
@@ -219,7 +238,7 @@ async def run_import(user, limit=8, remove_samples=False, auto=False, operator=N
     async with IMPORT_LOCK:
         settings = await get_settings()
         page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
-        posts = (await fetch_posts(page))[:limit]
+        posts = (await fetch_posts(page))[:max(limit, 50)]
         imported, skipped, ignored = [], 0, 0
         min_ts = datetime.now(timezone.utc).timestamp() - max_age_hours * 3600 if max_age_hours else 0
         for p in reversed(posts):

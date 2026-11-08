@@ -35,7 +35,7 @@ const PostList = ({ posts, sel, toggle, cats, forced, setForced }) => {
 
 const AutoBox = ({ auto, people, saveAuto }) => (
   <div className="border-t pt-3 grid gap-1" data-testid="fb-auto-box">
-    <label className="flex gap-2 items-center font-semibold"><Switch checked={auto.enabled} onCheckedChange={(v) => saveAuto({ enabled: v }, v ? "Automatski uvoz uključen" : "Automatski uvoz isključen")} data-testid="fb-auto-switch" />Automatski uvoz svaki sat</label>
+    <label className="flex gap-2 items-center font-semibold"><Switch checked={auto.enabled} onCheckedChange={(v) => saveAuto({ enabled: v }, v ? "Automatski uvoz uključen" : "Automatski uvoz isključen")} data-testid="fb-auto-switch" />Automatski uvoz svakih 15 minuta</label>
     <p className="text-xs text-slate-500" data-testid="fb-auto-status">Objavljuje samo nove objave sa slikom (oglase i objave bez slike preskače), već uvezene nikad ne duplira. Zadnja provjera: {auto.last_run ? `${fmtDate(auto.last_run)} (novih: ${auto.last_imported})` : "još nije pokrenuta"}</p>
     {auto.last_error && <p className="text-xs text-ccn-red" data-testid="fb-auto-error">Zadnja greška: {auto.last_error}</p>}
     <label className="grid gap-1 text-xs font-semibold mt-2">Autor uvezenih objava (ručno i automatski)
@@ -95,7 +95,7 @@ export const FacebookImport = ({ onDone }) => {
               </div>
             ) : (
               <div className="grid gap-3 text-sm">
-                <p>Označite objave koje želite objaviti na portalu. Svaka objava sama ide u odgovarajuću rubriku (npr. Sport, Bihać, Hronika), a obavještenja o smrti u rubriku Obavještenja, koja se ne prikazuje na naslovnici. Neoznačene nove objave se pamte kao preskočene i automatski uvoz ih neće objaviti. Facebook javno prikazuje samo zadnjih ~5 objava.</p>
+                <p>Označite objave koje želite objaviti na portalu. Svaka objava sama ide u odgovarajuću rubriku (npr. Sport, Bihać, Hronika), a obavještenja o smrti u rubriku Obavještenja, koja se ne prikazuje na naslovnici. Neoznačene nove objave se pamte kao preskočene i automatski uvoz ih neće objaviti. Facebook javno prikazuje samo zadnjih ~5 objava, ali portal pamti sve objave koje je vidio, pa ovdje vidite sve iz zadnja 24 sata.</p>
                 <PostList posts={posts} sel={sel} toggle={toggle} cats={cats} forced={forced} setForced={setForced} />
                 <label className="flex gap-2 items-center"><input type="checkbox" checked={removeSamples} onChange={(e) => setRemoveSamples(e.target.checked)} data-testid="fb-import-remove-samples" />Obriši probne „primjer“ članke</label>
                 <Button className="bg-ccn-navy w-fit" disabled={busy || !posts || !sel.length} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Objavi označene ({sel.length})</Button>
