@@ -1,5 +1,6 @@
 import re
 import json
+import logging
 import html
 import asyncio
 import unicodedata
@@ -14,6 +15,8 @@ from services import process_image
 from routes_articles import ArticleIn, prepare, save_version
 
 router = APIRouter(prefix="/api/admin/facebook")
+log = logging.getLogger("fb_import")
+SMALL = {"za", "na", "u", "i", "s", "sa", "o", "od", "do", "iz", "po", "uz", "je", "se", "li", "ne", "a", "te", "ili", "pri", "ko", "što", "sve", "će", "su", "bez", "čak", "ali", "kad", "ima"}
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
 
 
@@ -27,7 +30,7 @@ def make_title(line: str) -> str:
     letters = [c for c in t if c.isalpha()]
     if letters and sum(c.isupper() for c in letters) / len(letters) > 0.7:
         words = t.lower().split(" ")
-        t = " ".join(w.upper() if any(ch.isdigit() for ch in w) else w for w in words)
+        t = " ".join(w.upper() if any(ch.isdigit() for ch in w) or (len(w.strip("!?.,:")) <= 3 and w.strip("!?.,:") not in SMALL) else w for w in words)
         t = t[:1].upper() + t[1:]
     return t[:200] or "Vijest"
 
@@ -44,9 +47,11 @@ def parse_post(msg: str):
         else:
             rest.append(ln)
     paras = [p.strip() for p in "\n".join(rest).split("\n\n") if p.strip()]
+    lead = clean_line(paras[0]) if paras else ""
+    summary = lead[:220].rsplit(" ", 1)[0] + "…" if len(lead) > 220 else lead
+    if len(paras) > 1 and len(lead) <= 220:
+        paras = paras[1:]
     body = "".join(f"<p>{html.escape(p).replace(chr(10), '<br>')}</p>" for p in paras) or f"<p>{html.escape(msg.strip())}</p>"
-    plain = clean_line(" ".join(paras))
-    summary = plain[:220].rsplit(" ", 1)[0] + "…" if len(plain) > 220 else plain
     return title, summary, body, tags[:10]
 
 
@@ -90,7 +95,8 @@ async def import_posts(body: dict = Body(default={}), user=Depends(require("arti
         if p.get("photoURL"):
             try:
                 img = await save_image(p["photoURL"], user)
-            except Exception:
+            except Exception as e:
+                log.warning("FB slika nije preuzeta: %s", e)
                 img = None
         aid = new_id()
         data = await prepare(ArticleIn(title=title, summary=summary, body=html_body, tags=tags, category_id=cat and cat["id"],

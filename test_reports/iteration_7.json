@@ -1,0 +1,40 @@
+{
+  "summary": "Tested own-profile email change (PUT /api/auth/profile), super_admin email edit of other users (PUT /api/admin/users/{id}), and Facebook import (POST /api/admin/facebook/import) through the API and the UI. Backend: 15/15 pytest pass. UI: the profile email flow (password field appears, wrong-password toast, save, restore), Users dialog email edit plus duplicate-email error, the FB import dialog (sample checkbox unchecked, result 'Objavljeno: 0 · Već uvezeno ranije: 5') and the public homepage/article rendering all work. Sample articles were not deleted (removed_samples=0, 8 'primjer' articles still active). All changed emails were restored and TEST_ users deleted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/admin/facebook/import", "issue": "Imported articles get author_ids = importing user. The 5 live articles currently show the byline 'TEST_FB Admin' publicly (created by the test account). Reassign them to the owner/Redakcija, or let import use a configurable default author."},
+      {"endpoint": "POST /api/admin/facebook/import", "issue": "The user asked for 8 posts, but the FB page plugin only exposes 5. Only 5 real posts exist; the UI does not tell the user this limit."},
+      {"endpoint": "fb_import.make_title", "issue": "All-caps titles are lowercased word-by-word, which breaks acronyms/units, e.g. 'Na prodaju mini cooper s 1.6 – 135 kw!' (should be Mini Cooper S, kW)."},
+      {"endpoint": "PUT /api/auth/profile", "issue": "Email change does not revoke other sessions or notify the old address (security hardening suggestion)."},
+      {"endpoint": "PUT /api/admin/users/{id}", "issue": "Pre-existing: a non-super_admin holding users.manage via extra_permissions can still change role/password of a super_admin (only the email is guarded). Consider blocking edits to super_admin accounts by non-super_admins."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Article page (FB imported)", "issues": ["The summary is the first body paragraph, so the lead text appears twice (summary + first <p>)."]},
+      {"screen": "Homepage", "issues": ["2 of the 5 FB posts have no image and show the CCN logo placeholder in the hero side cards; the hero is still the sample 'Primjer glavne vijesti' (pinned/breaking sample) since samples were intentionally kept."]},
+      {"screen": "FB import dialog", "issues": ["'Obriši probne primjer članke' is checked by default, a destructive default. Also the toast 'Uvezeno 0 objava' is shown as a success when nothing was imported."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_email_fb_import.py", "/app/test_reports/pytest/pytest_email_fb.xml"],
+  "action_items": [
+    "Change the author of the 5 imported FB articles from 'TEST_FB Admin' to the real owner/Redakcija (and consider a default author for imports)",
+    "Tell the user in the FB import UI that Facebook only exposes about 5 latest posts",
+    "Improve make_title casing for all-caps posts (keep acronyms/units)",
+    "Optional: avoid duplicating the summary as the first paragraph for imported posts; default remove_samples checkbox to unchecked"
+  ],
+  "critical_code_review_comments": [
+    "fb_import: posts are deduplicated by createdTime key only. That is OK, but an article that was soft-deleted still blocks re-import (find_one has no deleted filter). This is probably intended.",
+    "fb_import: image download failures are silently swallowed (except Exception). Consider logging them.",
+    "routes_admin.update_user: the email guard is role-based (super_admin) while the rest of the endpoint is permission-based; super_admin accounts are not protected from users.manage holders."
+  ],
+  "updated_files": ["/app/backend/tests/test_email_fb_import.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Temporary TEST_ users (journalist, chief_editor + users.manage, test_ui_user) were created and deleted. test_fb@ccn.ba email was changed to test_fb2@ccn.ba and restored. One FB import was run with remove_samples=false (imported 0, skipped 5).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run the pytest with '-n 0' (pytest.ini uses xdist). The container date is Nov 2026, so the FB published dates (2026-11-08) match today. The 5 FB articles have fb_post_key; 3 have featured images. Do not run the import with remove_samples=true."
+}

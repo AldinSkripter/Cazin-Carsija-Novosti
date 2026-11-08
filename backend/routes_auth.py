@@ -193,6 +193,7 @@ async def profile(body: ProfileIn, user=Depends(get_current_user)):
         raise HTTPException(400, "Ime ne može biti prazno")
     await db.users.update_one({"id": user["id"]}, {"$set": upd})
     if "email" in upd:
+        await db.sessions.update_many({"user_id": user["id"], "id": {"$ne": user["session_id"]}}, {"$set": {"revoked": True}})
         await audit(user, "auth.email_changed", "user", user["id"], f"{user['email']} → {email}")
     return {"ok": True}
 

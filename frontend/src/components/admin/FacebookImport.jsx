@@ -14,7 +14,9 @@ export const FacebookImport = ({ onDone }) => {
     setBusy(true);
     try {
       const r = await api.post("/admin/facebook/import", { limit: 8, remove_samples: removeSamples });
-      setRes(r.data); toast.success(`Uvezeno ${r.data.imported.length} objava`); onDone?.();
+      setRes(r.data);
+      if (r.data.imported.length) toast.success(`Uvezeno ${r.data.imported.length} objava`); else toast.info("Nema novih objava za uvoz");
+      onDone?.();
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
   const close = () => { setOpen(false); setRes(null); };
@@ -33,7 +35,7 @@ export const FacebookImport = ({ onDone }) => {
               </div>
             ) : (
               <div className="grid gap-3 text-sm">
-                <p>Preuzimaju se najnovije javne objave sa vaše Facebook stranice (tekst, slika, datum) i odmah objavljuju na portalu u rubrici Cazin. Objave koje su već uvezene se preskaču.</p>
+                <p>Preuzimaju se najnovije javne objave sa vaše Facebook stranice (tekst, slika, datum) i odmah objavljuju na portalu u rubrici Cazin. Objave koje su već uvezene se preskaču. Facebook javno prikazuje samo zadnjih ~5 objava, pa uvoz pokrećite redovno.</p>
                 <label className="flex gap-2 items-center"><input type="checkbox" checked={removeSamples} onChange={(e) => setRemoveSamples(e.target.checked)} data-testid="fb-import-remove-samples" />Obriši probne „primjer“ članke</label>
                 <Button className="bg-ccn-navy w-fit" disabled={busy} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Uvezi i objavi</Button>
               </div>
