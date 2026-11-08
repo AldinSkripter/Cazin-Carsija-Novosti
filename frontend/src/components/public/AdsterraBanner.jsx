@@ -50,7 +50,6 @@ export function AdsterraBanner({ variant = "sidebar" }) {
     <aside className="w-full min-w-0 overflow-hidden" aria-label="Reklama" data-testid={`adsterra-${variant}`}>
       <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-1 text-center">Oglas</div>
       <iframe ref={frame} title={native ? "Adsterra preporučeni sadržaj" : "Adsterra oglas"} srcDoc={native ? NATIVE_HTML : BANNER_HTML} width={native ? "100%" : "160"} height={native ? height : 600} loading="lazy"
-        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
         className="block mx-auto border-0" style={{ width: native ? "100%" : 160, height: native ? height : 600 }} />
     </aside>
   );

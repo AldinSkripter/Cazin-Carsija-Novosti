@@ -4,6 +4,7 @@ import { Header, HeaderAds } from "./Header";
 import { Footer, CookieBanner } from "./Footer";
 import { useSite } from "../../lib/auth";
 import { trackView } from "../../lib/seo";
+import { AdsterraSocialBar } from "./AdsterraSocialBar";
 
 export default function PublicLayout() {
   const { pathname } = useLocation();
@@ -29,6 +30,7 @@ export default function PublicLayout() {
       </main>
       <Footer />
       <CookieBanner />
+      <AdsterraSocialBar />
     </div>
   );
 }
