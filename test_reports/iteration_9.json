@@ -1,0 +1,38 @@
+{
+  "summary": "Tested selective FB import: choosing posts by checkbox (keys), junk filtering (posts with no photo or ad keywords), the fb_ignored list, the cron never importing junk or ignored posts, re-importing an ignored post manually, and no duplicates. Backend: 11/12 pytest tests passed. The one failure is a junk-regex false positive in a unit test with a synthetic message. UI: the dialog, checkboxes, counter, result view, auto box, author select and the 390px mobile layout all work. State was restored: 2 FB articles, fb_ignored empty.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "fb_import.JUNK / is_junk", "issue": "The bare substring 'oglas' (and 'izdaje se') has no word boundaries. Normal news such as 'Načelnik se oglasio...', 'proglasio', 'proglasila', 'oglasila' and 'izdaje se saopćenje' is flagged as junk, and the auto import silently skips it. Use word-boundary patterns, e.g. r'\\boglas\\b|\\boglasi\\b(?! se)'."},
+      {"endpoint": "POST /api/admin/facebook/import", "issue": "keys=[] (nothing selected) marks every new post as ignored with no confirmation. The result says only 'Objavljeno: 0 · Već uvezeno ranije: 0' and does not mention that n posts were marked as skipped."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "FacebookImport PostList", "issue": "Every non-suggested post gets the label 'oglas / bez slike', even when it has an image (e.g. 'Na prodaju mini cooper' shows a photo next to the 'bez slike' label). Show the specific reason: 'oglas' or 'bez slike'.", "selector": "[data-testid='fb-post-fb-1794127171']", "priority": "LOW"},
+      {"component": "fb-import-run", "issue": "The button stays enabled with 0 selected ('Objavi označene (0)'). Clicking it marks all new posts as ignored. Consider a confirmation or a different label such as 'Preskoči sve'.", "selector": "[data-testid='fb-import-run']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "FB import dialog at mobile 390px", "issues": ["The dialog is full-bleed (left 0, right 390) with no side margin. There is no horizontal overflow and it is usable."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_fb_select_import.py", "/app/test_reports/pytest/pytest_fb_select.xml"],
+  "action_items": [
+    "Add word boundaries to the JUNK regex so news words like 'oglasio' or 'proglasio' are not treated as ads",
+    "Optional: show the specific reason (oglas vs bez slike) in the post list",
+    "Optional: confirm or relabel the run button when 0 posts are selected; show the ignored count in the result"
+  ],
+  "critical_code_review_comments": [
+    "The run_import keys branch marks non-selected posts as ignored only when their status is 'new', so already-imported posts are not affected. Correct.",
+    "Selecting a post bypasses is_junk on purpose (manual override). The fb_ignored entry is removed after import. Verified.",
+    "fb_initial.py is guarded by the .fb_initial_v1 marker in update.sh, so it runs once. It uses keys=None plus max_age_hours=24, which filters out junk and old posts.",
+    "run_import slices posts[:limit] before the keys filter. A selected key that falls beyond the limit is silently ignored. This is not a practical issue with ~5 posts."
+  ],
+  "updated_files": ["/app/backend/tests/test_fb_select_import.py"],
+  "success_rate": {"backend": "92% (11/12; the failure is a regex false-positive finding)", "frontend": "100%"},
+  "seed_data_creation": "Imported 1 FB post ('Potražnja za poslom', no image, so no media) during the test and hard-deleted it along with its versions. fb_ignored was cleared twice (after pytest and after the UI test). Final state: 2 FB articles, fb_ignored empty. Sample articles were not touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && REACT_APP_BACKEND_URL=<url> pytest tests/test_fb_select_import.py -n 0 -s. The tests are order-dependent and clean up after themselves (they delete FB articles other than fb-1794118158/fb-1794127197 and clear fb_ignored). Super admin test_fb@ccn.ba / TestFb12345A. FB currently exposes 5 posts: 2 imported, 3 junk."
+}

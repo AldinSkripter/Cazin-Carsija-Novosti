@@ -88,11 +88,17 @@ def post_hash(msg: str) -> str:
     return hashlib.sha1(re.sub(r"\s+", " ", msg).strip().lower()[:300].encode()).hexdigest()
 
 
-JUNK = re.compile(r"traži se posao|tražim posao|potražnja za poslom|traži posao|stan za iznajmljivanje|izdaje se|izdajem|iznajmljuje se|traži se stan|tražim stan|na prodaju|prodajem|prodaje se|kupujem|oglas", re.I)
+JUNK = re.compile(r"\b(traži se posao|tražim posao|potražnja za poslom|traži posao|stan za iznajmljivanje|stan za izdavanje|izdaje se (stan|kuća|soba|poslovni|apartman|garsonjera)|izdajem|iznajmljuje se|traži se stan|tražim stan|na prodaju|prodajem|prodaje se|kupujem|mali oglas|mali oglasi)\b", re.I)
+
+
+def junk_reason(p):
+    if not p.get("photoURL"):
+        return "bez slike"
+    return "oglas" if JUNK.search(p.get("message") or "") else None
 
 
 def is_junk(p) -> bool:
-    return not p.get("photoURL") or bool(JUNK.search(p.get("message") or ""))
+    return junk_reason(p) is not None
 
 
 def post_key(p) -> str:
@@ -114,7 +120,7 @@ async def list_posts(user=Depends(require("articles.publish"))):
         title, summary, _, _ = parse_post(p["message"])
         created = datetime.fromtimestamp(p["createdTime"], timezone.utc).isoformat() if p.get("createdTime") else None
         out.append({"key": post_key(p), "title": title, "summary": summary, "image": p.get("photoURL"), "created_at": created,
-                    "suggested": not is_junk(p), "status": await post_status(post_key(p), post_hash(p["message"]))})
+                    "suggested": not is_junk(p), "reason": junk_reason(p), "status": await post_status(post_key(p), post_hash(p["message"]))})
     return out
 
 
@@ -124,13 +130,14 @@ async def run_import(user, limit=8, remove_samples=False, auto=False, operator=N
         page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
         posts = (await fetch_posts(page))[:limit]
         cat = await db.categories.find_one({"slug": "cazin"}, {"id": 1}) or await db.categories.find_one({}, {"id": 1})
-        imported, skipped = [], 0
+        imported, skipped, ignored = [], 0, 0
         min_ts = datetime.now(timezone.utc).timestamp() - max_age_hours * 3600 if max_age_hours else 0
         for p in reversed(posts):
             key, h = post_key(p), post_hash(p["message"])
             if keys is not None and key not in keys:
                 if await post_status(key, h) == "new":
                     await db.fb_ignored.update_one({"key": key}, {"$setOnInsert": {"key": key, "hash": h, "at": iso()}}, upsert=True)
+                    ignored += 1
                 continue
             if (p.get("createdTime") or 0) < min_ts or (keys is None and is_junk(p)):
                 continue
@@ -167,7 +174,7 @@ async def run_import(user, limit=8, remove_samples=False, auto=False, operator=N
         await db.settings.update_one({"key": "fb_auto"}, {"$set": {"value.last_run": iso(), "value.last_imported": len(imported), "value.last_error": None}}, upsert=True)
         if imported or not auto:
             await audit(operator or user, "facebook.import", "article", "", f"{'auto: ' if auto else ''}uvezeno {len(imported)}, preskočeno {skipped}, obrisano probnih {removed}")
-        return {"imported": imported, "skipped": skipped, "removed_samples": removed}
+        return {"imported": imported, "skipped": skipped, "ignored": ignored, "removed_samples": removed}
 
 
 async def auto_state():

@@ -19,7 +19,7 @@ const PostList = ({ posts, sel, toggle }) => {
           {p.image ? <img src={p.image} alt="" className="w-16 h-12 object-cover rounded-sm shrink-0" referrerPolicy="no-referrer" /> : <div className="w-16 h-12 rounded-sm bg-slate-100 text-[10px] text-slate-400 grid place-items-center shrink-0">bez slike</div>}
           <span className="min-w-0">
             <span className="font-semibold block leading-tight">{p.title}</span>
-            <span className="text-xs text-slate-500">{fmtDate(p.created_at)} · {STATUS[p.status]}{p.status === "new" && !p.suggested && " · oglas / bez slike"}</span>
+            <span className="text-xs text-slate-500">{fmtDate(p.created_at)} · {STATUS[p.status]}{p.status === "new" && p.reason && ` · ${p.reason}`}</span>
           </span>
         </label>
       ))}
@@ -80,7 +80,7 @@ export const FacebookImport = ({ onDone }) => {
             <DialogTitle>Uvoz objava sa Facebook stranice</DialogTitle>
             {res ? (
               <div className="grid gap-2 text-sm" data-testid="fb-import-result">
-                <p>Objavljeno: <strong>{res.imported.length}</strong> · Već uvezeno ranije: {res.skipped}{res.removed_samples > 0 && ` · Obrisano probnih: ${res.removed_samples}`}</p>
+                <p>Objavljeno: <strong>{res.imported.length}</strong> · Već uvezeno ranije: {res.skipped}{res.ignored > 0 && ` · Preskočeno (neće se automatski uvoziti): ${res.ignored}`}{res.removed_samples > 0 && ` · Obrisano probnih: ${res.removed_samples}`}</p>
                 <ul className="list-disc pl-5">{res.imported.map((t) => <li key={t}>{t}</li>)}</ul>
                 <Button className="bg-ccn-navy w-fit" onClick={close} data-testid="fb-import-close">Zatvori</Button>
               </div>
@@ -89,7 +89,7 @@ export const FacebookImport = ({ onDone }) => {
                 <p>Označite objave koje želite objaviti na portalu. Neoznačene nove objave se pamte kao preskočene i automatski uvoz ih neće objaviti. Facebook javno prikazuje samo zadnjih ~5 objava.</p>
                 <PostList posts={posts} sel={sel} toggle={toggle} />
                 <label className="flex gap-2 items-center"><input type="checkbox" checked={removeSamples} onChange={(e) => setRemoveSamples(e.target.checked)} data-testid="fb-import-remove-samples" />Obriši probne „primjer“ članke</label>
-                <Button className="bg-ccn-navy w-fit" disabled={busy || !posts} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Objavi označene ({sel.length})</Button>
+                <Button className="bg-ccn-navy w-fit" disabled={busy || !posts || !sel.length} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Objavi označene ({sel.length})</Button>
                 {auto && <AutoBox auto={auto} people={people} saveAuto={saveAuto} />}
               </div>
             )}
