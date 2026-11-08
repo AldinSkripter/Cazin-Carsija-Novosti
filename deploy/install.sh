@@ -133,6 +133,11 @@ if [ "$PLESK" = 1 ]; then
 
   NG=$(mktemp)
   cat > "$NG" <<EOF
+set \$ccn_r "";
+if (\$scheme = http) { set \$ccn_r "h"; }
+if (\$http_user_agent !~* "facebookexternalhit|facebot|meta-externalagent|twitterbot|linkedinbot|whatsapp|telegrambot|slackbot|discordbot|viber|skypeuripreview|pinterest") { set \$ccn_r "\${ccn_r}u"; }
+if (\$request_uri ~ "^/\.well-known/") { set \$ccn_r ""; }
+if (\$ccn_r = "hu") { return 301 https://\$host\$request_uri; }
 location ~ ^/(?!\.well-known/) {
     proxy_pass http://127.0.0.1:$APP_PORT;
     proxy_http_version 1.1;
@@ -206,7 +211,7 @@ if [ "$PLESK" = 1 ]; then
   say "Izdajem besplatni SSL (Let's Encrypt)…"
   if plesk bin extension --exec letsencrypt cli.php -d "$DOMAIN" -d "www.$DOMAIN" -m "$ADMIN_EMAIL" >"$D/ssl.log" 2>&1 \
      || plesk bin extension --exec letsencrypt cli.php -d "$DOMAIN" -m "$ADMIN_EMAIL" >>"$D/ssl.log" 2>&1; then
-    plesk bin site --update "$DOMAIN" -ssl-redirect true >/dev/null 2>&1 || true; ok "SSL aktivan"
+    plesk bin site --update "$DOMAIN" -ssl-redirect false >/dev/null 2>&1 || true; ok "SSL aktivan"
   else tail -n 15 "$D/ssl.log"; warn "SSL nije izdat – razlog je iznad (cijeli log: $D/ssl.log). Ili: Plesk → SSL/TLS → Let's Encrypt"; fi
 fi
 
