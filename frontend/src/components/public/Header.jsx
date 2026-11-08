@@ -110,7 +110,7 @@ export function Header() {
         <nav className="hidden lg:block border-t border-white/[0.08] bg-ccn-navy2/40" aria-label="Glavni meni">
           <div className="max-w-7xl mx-auto px-4 flex items-center">
             <div className="flex gap-0 overflow-x-auto flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {menu.map((m) => (
+              {menu.filter((m) => m.url !== "/kamere").map((m) => (
                 <NavLink key={m.url} to={m.url} end={m.url === "/"} data-testid={`nav-${m.url.replace(/\W+/g, "-")}`}
                   className={({ isActive }) => `relative px-2.5 xl:px-3.5 py-3 text-[13px] xl:text-[14px] font-semibold whitespace-nowrap transition-colors after:absolute after:left-2.5 xl:after:left-3.5 after:right-2.5 xl:after:right-3.5 after:bottom-0 after:h-[3px] after:rounded-t after:transition-transform after:origin-left ${isActive ? "text-white after:bg-ccn-gold after:scale-x-100" : "text-white/75 hover:text-white after:bg-ccn-teal after:scale-x-0 hover:after:scale-x-100"}`}>
                   {m.label}
