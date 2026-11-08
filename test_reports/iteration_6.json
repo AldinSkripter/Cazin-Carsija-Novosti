@@ -1,0 +1,36 @@
+{
+  "summary": "Tested share buttons, bottom share block, reuse/attribution box, /api/share/<slug> OG page, /api/og-image/<slug>.jpg renderer, static /og-image.jpg and index.html OG meta, at desktop 1920, mobile 390 and in dark mode. All features work. Found and fixed 1 real bug: on 390px mobile the page overflowed horizontally (scrollWidth 541). The long unbroken URL in reuse-text was the cause. Also found the dev server was serving a stale index.html and bundle (webpack was not picking up changes), fixed by restarting the frontend.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/share/{slug}", "issue": "On preview, when SITE_URL is not set, base comes from the Host header and resolves to the internal host https://carsija-novosti--4hvpmrhn.cluster-16.preview.emergentcf.cloud, not the public preview domain. og:url, og:image and the refresh redirect all use that host. Fine on the VPS if SITE_URL or settings.site_url is set. Make sure SITE_URL is set in production."},
+      {"endpoint": "/api/og-image/{slug}.jpg", "issue": "No error handling around the remote httpx fetch (raise_for_status), get_object or PIL decode. A broken or remote-404 featured image gives a 500, not a 404 or a fallback to /og-image.jpg. Suggest try/except and a fallback to the site og image."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ReuseBox reuse-text", "issue": "Horizontal overflow on mobile 390px (document scrollWidth 541): the long URL did not wrap because break-words does not shrink min-content inside the grid column. FIXED by adding [overflow-wrap:anywhere]. Now scrollWidth is 390.", "selector": "[data-testid='reuse-text']", "priority": "HIGH (fixed)"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Article share rows", "issues": ["WhatsApp and Viber use the same MessageCircle icon; only colour tells them apart. Consider brand icons, e.g. react-icons/si.", "In dark mode the X button (#111) is nearly invisible on the dark card; add a border/ring or a lighter variant in dark mode."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_share_og.py", "/app/test_reports/pytest/share_og.xml"],
+  "action_items": [
+    "Set SITE_URL in backend env (production) so /api/share og:url/og:image use the public domain",
+    "Add try/except in og_image() with a fallback (redirect to /og-image.jpg or 404) instead of an unhandled 500 on image fetch/decode errors",
+    "Optional: distinct WhatsApp/Viber icons; improve X button contrast in dark mode"
+  ],
+  "critical_code_review_comments": [
+    "routes_public.og_image: _OG_CACHE is an in-process dict holding up to 300 JPEGs (~100KB each, so ~30MB per worker). Acceptable, but clear() evicts everything at once.",
+    "ShareReuse ReuseBox: names and url are interpolated raw into the HTML snippet. Author names with quotes or < would make the copied HTML invalid; escape them.",
+    "CRA dev server on preview did not hot-reload public/index.html or the ShareReuse.jsx edits until supervisorctl restart frontend; restart after edits if a change does not show."
+  ],
+  "updated_files": ["/app/frontend/src/components/public/ShareReuse.jsx", "/app/backend/tests/test_share_og.py"],
+  "success_rate": {"backend": "100% (6 passed, 1 skipped: no article without an image exists)", "frontend": "100% after fix"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "8 seeded articles, all with featured images (media at /api/media/file/...). The share hrefs use REACT_APP_BACKEND_URL/vijesti/<slug>. The clipboard copy and toasts were verified with clipboard permissions granted. Run the backend test with: REACT_APP_BACKEND_URL=... pytest tests/test_share_og.py"
+}

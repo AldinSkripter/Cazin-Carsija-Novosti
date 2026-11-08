@@ -552,14 +552,18 @@ async def og_image(slug: str):
         raise HTTPException(404, "Nema slike")
     key = (slug, a.get("updated_at"))
     if key not in _OG_CACHE:
-        if src.startswith("/api/media/file/"):
-            raw, _ = await asyncio.to_thread(get_object, src[len("/api/media/file/"):])
-        else:
-            async with httpx.AsyncClient(timeout=20, follow_redirects=True) as c:
-                r = await c.get(src)
-                r.raise_for_status()
-                raw = r.content
+        try:
+            if src.startswith("/api/media/file/"):
+                raw, _ = await asyncio.to_thread(get_object, src[len("/api/media/file/"):])
+            else:
+                async with httpx.AsyncClient(timeout=20, follow_redirects=True) as c:
+                    r = await c.get(src)
+                    r.raise_for_status()
+                    raw = r.content
+            rendered = await asyncio.to_thread(_render_og, raw)
+        except Exception:
+            return RedirectResponse("/og-image.jpg", status_code=302)
         if len(_OG_CACHE) > 300:
             _OG_CACHE.clear()
-        _OG_CACHE[key] = await asyncio.to_thread(_render_og, raw)
+        _OG_CACHE[key] = rendered
     return Response(_OG_CACHE[key], media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
