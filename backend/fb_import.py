@@ -88,16 +88,54 @@ def post_hash(msg: str) -> str:
     return hashlib.sha1(re.sub(r"\s+", " ", msg).strip().lower()[:300].encode()).hexdigest()
 
 
-async def run_import(user, limit=8, remove_samples=False, auto=False, operator=None):
+JUNK = re.compile(r"traži se posao|tražim posao|potražnja za poslom|traži posao|stan za iznajmljivanje|izdaje se|izdajem|iznajmljuje se|traži se stan|tražim stan|na prodaju|prodajem|prodaje se|kupujem|oglas", re.I)
+
+
+def is_junk(p) -> bool:
+    return not p.get("photoURL") or bool(JUNK.search(p.get("message") or ""))
+
+
+def post_key(p) -> str:
+    return f"fb-{p.get('createdTime')}"
+
+
+async def post_status(key: str, h: str) -> str:
+    if await db.articles.find_one({"$or": [{"fb_post_key": key}, {"fb_post_hash": h}]}, {"_id": 1}):
+        return "imported"
+    return "ignored" if await db.fb_ignored.find_one({"key": key}, {"_id": 1}) else "new"
+
+
+@router.get("/posts")
+async def list_posts(user=Depends(require("articles.publish"))):
+    settings = await get_settings()
+    page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
+    out = []
+    for p in await fetch_posts(page):
+        title, summary, _, _ = parse_post(p["message"])
+        created = datetime.fromtimestamp(p["createdTime"], timezone.utc).isoformat() if p.get("createdTime") else None
+        out.append({"key": post_key(p), "title": title, "summary": summary, "image": p.get("photoURL"), "created_at": created,
+                    "suggested": not is_junk(p), "status": await post_status(post_key(p), post_hash(p["message"]))})
+    return out
+
+
+async def run_import(user, limit=8, remove_samples=False, auto=False, operator=None, keys=None, max_age_hours=None):
     async with IMPORT_LOCK:
         settings = await get_settings()
         page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
         posts = (await fetch_posts(page))[:limit]
         cat = await db.categories.find_one({"slug": "cazin"}, {"id": 1}) or await db.categories.find_one({}, {"id": 1})
         imported, skipped = [], 0
+        min_ts = datetime.now(timezone.utc).timestamp() - max_age_hours * 3600 if max_age_hours else 0
         for p in reversed(posts):
-            key, h = f"fb-{p.get('createdTime')}", post_hash(p["message"])
-            if await db.articles.find_one({"$or": [{"fb_post_key": key}, {"fb_post_hash": h}]}, {"_id": 1}):
+            key, h = post_key(p), post_hash(p["message"])
+            if keys is not None and key not in keys:
+                if await post_status(key, h) == "new":
+                    await db.fb_ignored.update_one({"key": key}, {"$setOnInsert": {"key": key, "hash": h, "at": iso()}}, upsert=True)
+                continue
+            if (p.get("createdTime") or 0) < min_ts or (keys is None and is_junk(p)):
+                continue
+            status = await post_status(key, h)
+            if status == "imported" or (status == "ignored" and keys is None):
                 skipped += 1
                 continue
             title, summary, html_body, tags = parse_post(p["message"])
@@ -119,6 +157,7 @@ async def run_import(user, limit=8, remove_samples=False, auto=False, operator=N
                 skipped += 1
                 continue
             await save_version(data, user, "Automatski uvezeno sa Facebooka" if auto else "Uvezeno sa Facebooka")
+            await db.fb_ignored.delete_one({"key": key})
             imported.append(title)
         removed = 0
         if remove_samples:
@@ -145,7 +184,11 @@ async def import_author(fallback=None):
 @router.post("/import")
 async def import_posts(body: dict = Body(default={}), user=Depends(require("articles.publish"))):
     author = await import_author() or user
-    return await run_import({**user, "id": author["id"], "name": author["name"]}, int(body.get("limit") or 8), bool(body.get("remove_samples")), operator=user)
+    keys = body.get("keys")
+    if keys is not None and not isinstance(keys, list):
+        raise HTTPException(400, "Neispravan izbor objava")
+    return await run_import({**user, "id": author["id"], "name": author["name"]}, int(body.get("limit") or 8), bool(body.get("remove_samples")),
+                            operator=user, keys=set(keys) if keys is not None else None)
 
 
 @router.get("/auto")

@@ -46,6 +46,7 @@ INDEXES = {
     "newsletter_subscribers": [IndexModel([("email", ASCENDING)], unique=True), IndexModel([("token", ASCENDING)])],
     "redirects": [IndexModel([("from_path", ASCENDING)])],
     "settings": [IndexModel([("key", ASCENDING)], unique=True)],
+    "fb_ignored": [IndexModel([("key", ASCENDING)], unique=True)],
     "roles": [IndexModel([("key", ASCENDING)], unique=True)],
 }
 

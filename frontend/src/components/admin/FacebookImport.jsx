@@ -6,6 +6,41 @@ import { Switch } from "../ui/switch";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 
+const STATUS = { imported: "Već objavljeno", ignored: "Ranije preskočeno", new: "Nova" };
+
+const PostList = ({ posts, sel, toggle }) => {
+  if (!posts) return <p className="text-slate-500 flex items-center gap-2" data-testid="fb-posts-loading"><Loader2 className="w-4 h-4 animate-spin" />Učitavam objave sa Facebooka…</p>;
+  if (!posts.length) return <p className="text-slate-500" data-testid="fb-posts-empty">Nema objava.</p>;
+  return (
+    <div className="grid gap-2 max-h-[45vh] overflow-y-auto pr-1" data-testid="fb-posts-list">
+      {posts.map((p) => (
+        <label key={p.key} className={`flex gap-3 items-start border rounded-md p-2 ${p.status === "imported" ? "opacity-50" : "cursor-pointer hover:bg-slate-50"}`} data-testid={`fb-post-${p.key}`}>
+          <input type="checkbox" className="mt-1" disabled={p.status === "imported"} checked={sel.includes(p.key)} onChange={() => toggle(p.key)} data-testid={`fb-post-check-${p.key}`} />
+          {p.image ? <img src={p.image} alt="" className="w-16 h-12 object-cover rounded-sm shrink-0" referrerPolicy="no-referrer" /> : <div className="w-16 h-12 rounded-sm bg-slate-100 text-[10px] text-slate-400 grid place-items-center shrink-0">bez slike</div>}
+          <span className="min-w-0">
+            <span className="font-semibold block leading-tight">{p.title}</span>
+            <span className="text-xs text-slate-500">{fmtDate(p.created_at)} · {STATUS[p.status]}{p.status === "new" && !p.suggested && " · oglas / bez slike"}</span>
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+};
+
+const AutoBox = ({ auto, people, saveAuto }) => (
+  <div className="border-t pt-3 grid gap-1" data-testid="fb-auto-box">
+    <label className="flex gap-2 items-center font-semibold"><Switch checked={auto.enabled} onCheckedChange={(v) => saveAuto({ enabled: v }, v ? "Automatski uvoz uključen" : "Automatski uvoz isključen")} data-testid="fb-auto-switch" />Automatski uvoz svaki sat</label>
+    <p className="text-xs text-slate-500" data-testid="fb-auto-status">Objavljuje samo nove objave sa slikom (oglase i objave bez slike preskače), već uvezene nikad ne duplira. Zadnja provjera: {auto.last_run ? `${fmtDate(auto.last_run)} (novih: ${auto.last_imported})` : "još nije pokrenuta"}</p>
+    {auto.last_error && <p className="text-xs text-ccn-red" data-testid="fb-auto-error">Zadnja greška: {auto.last_error}</p>}
+    <label className="grid gap-1 text-xs font-semibold mt-2">Autor uvezenih objava (ručno i automatski)
+      <select value={auto.author_id || ""} onChange={(e) => saveAuto({ author_id: e.target.value }, "Autor sačuvan")} className="border rounded-sm px-3 py-2 text-sm font-normal" data-testid="fb-author-select">
+        <option value="">Vlasnik portala (prvi Super Admin)</option>
+        {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+    </label>
+  </div>
+);
+
 export const FacebookImport = ({ onDone }) => {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -13,27 +48,35 @@ export const FacebookImport = ({ onDone }) => {
   const [res, setRes] = useState(null);
   const [auto, setAuto] = useState(null);
   const [people, setPeople] = useState([]);
-  useEffect(() => { if (open) { api.get("/admin/facebook/auto").then((r) => setAuto(r.data)); api.get("/admin/users/directory").then((r) => setPeople(r.data)); } }, [open]);
+  const [posts, setPosts] = useState(null);
+  const [sel, setSel] = useState([]);
+  useEffect(() => {
+    if (!open) { return; }
+    api.get("/admin/facebook/auto").then((r) => setAuto(r.data));
+    api.get("/admin/users/directory").then((r) => setPeople(r.data));
+    api.get("/admin/facebook/posts").then((r) => { setPosts(r.data); setSel(r.data.filter((p) => p.status === "new" && p.suggested).map((p) => p.key)); })
+      .catch((e) => { setPosts([]); toast.error(errMsg(e)); });
+  }, [open]);
   const saveAuto = async (body, msg) => {
     try { const r = await api.put("/admin/facebook/auto", body); setAuto(r.data); toast.success(msg); } catch (e) { toast.error(errMsg(e)); }
   };
-  const toggleAuto = (v) => saveAuto({ enabled: v }, v ? "Automatski uvoz uključen" : "Automatski uvoz isključen");
+  const toggle = (k) => setSel(sel.includes(k) ? sel.filter((x) => x !== k) : [...sel, k]);
   const run = async () => {
     setBusy(true);
     try {
-      const r = await api.post("/admin/facebook/import", { limit: 8, remove_samples: removeSamples });
+      const r = await api.post("/admin/facebook/import", { limit: 8, keys: sel, remove_samples: removeSamples });
       setRes(r.data);
-      if (r.data.imported.length) toast.success(`Uvezeno ${r.data.imported.length} objava`); else toast.info("Nema novih objava za uvoz");
+      if (r.data.imported.length) toast.success(`Objavljeno ${r.data.imported.length} objava`); else toast.info("Ništa novo nije objavljeno");
       onDone?.();
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
-  const close = () => { setOpen(false); setRes(null); };
+  const close = () => { setOpen(false); setRes(null); setPosts(null); };
   return (
     <>
       <Button variant="outline" onClick={() => setOpen(true)} data-testid="fb-import-button"><Facebook className="w-4 h-4 mr-1" />Uvezi sa Facebooka</Button>
       {open && (
         <Dialog open onOpenChange={close}>
-          <DialogContent className="max-w-lg" data-testid="fb-import-dialog">
+          <DialogContent className="max-w-xl max-h-[92vh] overflow-y-auto" data-testid="fb-import-dialog">
             <DialogTitle>Uvoz objava sa Facebook stranice</DialogTitle>
             {res ? (
               <div className="grid gap-2 text-sm" data-testid="fb-import-result">
@@ -43,22 +86,11 @@ export const FacebookImport = ({ onDone }) => {
               </div>
             ) : (
               <div className="grid gap-3 text-sm">
-                <p>Preuzimaju se najnovije javne objave sa vaše Facebook stranice (tekst, slika, datum) i odmah objavljuju na portalu u rubrici Cazin. Objave koje su već uvezene se preskaču. Facebook javno prikazuje samo zadnjih ~5 objava, pa uvoz pokrećite redovno.</p>
+                <p>Označite objave koje želite objaviti na portalu. Neoznačene nove objave se pamte kao preskočene i automatski uvoz ih neće objaviti. Facebook javno prikazuje samo zadnjih ~5 objava.</p>
+                <PostList posts={posts} sel={sel} toggle={toggle} />
                 <label className="flex gap-2 items-center"><input type="checkbox" checked={removeSamples} onChange={(e) => setRemoveSamples(e.target.checked)} data-testid="fb-import-remove-samples" />Obriši probne „primjer“ članke</label>
-                <Button className="bg-ccn-navy w-fit" disabled={busy} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Uvezi i objavi</Button>
-                {auto && (
-                  <div className="border-t pt-3 grid gap-1" data-testid="fb-auto-box">
-                    <label className="flex gap-2 items-center font-semibold"><Switch checked={auto.enabled} onCheckedChange={toggleAuto} data-testid="fb-auto-switch" />Automatski uvoz svaki sat</label>
-                    <p className="text-xs text-slate-500" data-testid="fb-auto-status">Objavljuje samo nove objave, već uvezene nikad ne duplira. Zadnja provjera: {auto.last_run ? `${fmtDate(auto.last_run)} (novih: ${auto.last_imported})` : "još nije pokrenuta"}</p>
-                    {auto.last_error && <p className="text-xs text-ccn-red" data-testid="fb-auto-error">Zadnja greška: {auto.last_error}</p>}
-                    <label className="grid gap-1 text-xs font-semibold mt-2">Autor uvezenih objava (ručno i automatski)
-                      <select value={auto.author_id || ""} onChange={(e) => saveAuto({ author_id: e.target.value }, "Autor sačuvan")} className="border rounded-sm px-3 py-2 text-sm font-normal" data-testid="fb-author-select">
-                        <option value="">Vlasnik portala (prvi Super Admin)</option>
-                        {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                    </label>
-                  </div>
-                )}
+                <Button className="bg-ccn-navy w-fit" disabled={busy || !posts} onClick={run} data-testid="fb-import-run">{busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Facebook className="w-4 h-4 mr-1" />}Objavi označene ({sel.length})</Button>
+                {auto && <AutoBox auto={auto} people={people} saveAuto={saveAuto} />}
               </div>
             )}
           </DialogContent>
