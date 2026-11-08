@@ -22,7 +22,7 @@ const PostList = ({ posts, sel, toggle, cats, forced, setForced }) => {
             <span className="text-xs text-slate-500">{fmtDate(p.created_at)} · {STATUS[p.status]}{p.status === "new" && p.reason && ` · ${p.reason}`}</span>
             {p.status !== "imported" && (
               <select value={forced[p.key] || ""} onChange={(e) => setForced({ ...forced, [p.key]: e.target.value })} onClick={(e) => e.stopPropagation()} className="mt-1 border rounded-sm px-2 py-1 text-xs w-full max-w-xs" data-testid={`fb-post-cat-${p.key}`}>
-                <option value="">Rubrika automatski (prijedlog: {cats.find((c) => c.slug === p.category)?.name || p.category})</option>
+                <option value="">Rubrika automatski (AI odlučuje, prijedlog: {cats.find((c) => c.slug === p.category)?.name || p.category})</option>
                 {cats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
               </select>
             )}

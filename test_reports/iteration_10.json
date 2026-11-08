@@ -1,0 +1,37 @@
+{
+  "summary": "Tested automatic rubric (category) assignment for FB imports and the new hidden 'Obavještenja' category. Backend: 8/8 pytest tests passed. They cover the unit cases for detect_categories; the category and menu order; the hidden-category article being excluded from home blocks, the unfiltered list and popular, while it still appears in the category list and its detail page; the live FB import with the AI refinement (notice -> obavjestenja, culture post -> kultura + Cazin); a forced valid slug; an unknown slug falling back to auto; and bad-type categories not crashing. An AI probe on 6 texts showed Claude refines correctly (school news -> obrazovanje + cazin). UI: 100%. The dialog shows 5 category selects with 'Rubrika automatski (prijedlog: X)' and 28 options. Choosing a category does not toggle the checkbox. The import sent the override and the article went into Zanimljivosti. The home page hides the notice, the menu link works, and /kategorija/obavjestenja renders on desktop and at 390px mobile.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "fb_import.TOPIC_RULES", "issue": "Typo 'pljakš' (should be 'pljačk' for pljačka/pljačkaš). 'uhapšen' is listed twice. 'uhapsila/uhapsio' does not match 'uhapšen'; it only worked in the test because of 'policij'. The sport pattern 'dres' has no word boundary, so it matches 'adresa' (weight 1)."},
+      {"endpoint": "GET /api/admin/facebook/posts", "issue": "The suggested 'category' comes from keywords only, but the import also uses AI. The final rubric can differ from the 'prijedlog' shown to the editor, e.g. a school post shows 'Cazin' but is imported as Obrazovanje."},
+      {"endpoint": "articles_common.query_articles hide", "issue": "Only category_id is excluded. An article whose main category is something else but has Obavještenja in category_ids still appears on the home page. Hiding is also skipped for tag, author and search listings. This is probably acceptable."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/kategorija/obavjestenja", "issues": ["The count text says '1 rezultata', which is wrong grammar for 1 (should be '1 rezultat')."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_fb_categories.py", "/app/backend/tests/probe_ai_topic.py", "/app/test_reports/pytest/pytest_fb_categories.xml"],
+  "action_items": [
+    "Fix the TOPIC_RULES typos: change 'pljakš' to 'pljačk', remove the duplicate 'uhapšen', add 'uhaps', and add a word boundary to 'dres'",
+    "Optional: tell the editor in the dialog that the final rubric may be refined by AI, or align the suggestion with the import",
+    "Optional: fix the '1 rezultata' plural form"
+  ],
+  "critical_code_review_comments": [
+    "The detect_categories hard rule (obavjestenja score >= 4) is checked before the AI result, so death notices are never moved elsewhere by AI. Correct.",
+    "re.findall on an alternation regex does not count overlaps, so 'izrazio saučešće' scores 2, not 4. Condolence news is therefore not misfiled as a notice. Verified.",
+    "valid_forced filters to existing slugs and string values. Unknown slugs fall back to auto classification. A non-dict value is ignored. Verified.",
+    "Hard-deleting FB media removes the DB records only. Any image variant files written by process_image stay on disk or storage."
+  ],
+  "updated_files": ["/app/backend/tests/test_fb_categories.py", "/app/backend/tests/mk_test_user.py", "/app/backend/tests/probe_ai_topic.py", "/app/backend/tests/cleanup_fb.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100%"},
+  "test_credentials": "test_fb@ccn.ba / TestFb12345A did not exist at the start. It was created with tests/mk_test_user.py create, then deleted afterwards with 'delete'.",
+  "seed_data_creation": "Imported 2 FB posts twice via pytest and once via the UI. Created 1 TEST_ article in Obavještenja. All were hard-deleted, including versions and facebook media records. fb_ignored was cleared and the TEST user was deleted. Final state: 0 FB articles, 0 facebook media, fb_ignored empty, 8 'primjer' articles intact.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && python tests/mk_test_user.py create && REACT_APP_BACKEND_URL=<url> pytest tests/test_fb_categories.py -n 0 -s; then python tests/cleanup_fb.py && python tests/mk_test_user.py delete. FB keys: fb-1794127197 (death notice), fb-1794118158 (culture); the other 3 posts are junk."
+}

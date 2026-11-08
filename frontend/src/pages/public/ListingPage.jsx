@@ -70,7 +70,7 @@ export default function ListingPage({ mode }) {
           </div>
         )}
         {mode === "search" && <SearchForm params={params} setParams={setParams} cats={cats} />}
-        {data && <p className="text-sm text-slate-500 mb-4" data-testid="listing-total">{data.total} rezultata</p>}
+        {data && <p className="text-sm text-slate-500 mb-4" data-testid="listing-total">{data.total} {data.total % 10 === 1 && data.total % 100 !== 11 ? "rezultat" : "rezultata"}</p>}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-8">
           {data?.items.map((a, i) => (
             <div key={a.id} className="contents">
