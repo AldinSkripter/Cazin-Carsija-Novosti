@@ -17,6 +17,7 @@ from pymongo.errors import DuplicateKeyError
 from core import db, new_id, iso, require, audit, get_settings
 from services import process_image, ai_generate
 from routes_articles import ArticleIn, prepare, save_version
+from fb_links import own_site_link
 
 router = APIRouter(prefix="/api/admin/facebook")
 cron_router = APIRouter(prefix="/api/cron")
@@ -81,7 +82,7 @@ async def fetch_posts(page_url: str, hours: int = 24) -> list:
     except HTTPException:
         live = []
     for p in live:
-        await db.fb_posts.update_one({"key": post_key(p)}, {"$set": {k: p.get(k) for k in CACHE_FIELDS}, "$setOnInsert": {"first_seen": iso()}}, upsert=True)
+        await db.fb_posts.update_one({"key": post_key(p)}, {"$set": {**{k: p.get(k) for k in CACHE_FIELDS}, "link_metadata": p}, "$setOnInsert": {"first_seen": iso()}}, upsert=True)
     since = datetime.now(timezone.utc).timestamp() - hours * 3600
     cached = await db.fb_posts.find({"createdTime": {"$gte": since}}, {"_id": 0}).to_list(500)
     if not live and not cached:
@@ -231,10 +232,11 @@ async def list_posts(user=Depends(require("articles.publish"))):
     page = (settings.get("social") or {}).get("facebook") or "https://www.facebook.com/cazin.carsija"
     out = []
     for p in await fetch_posts(page):
+        own_link = own_site_link(p, [settings.get("site_url"), os.environ.get("SITE_URL"), "https://cazin-carsija.ba"])
         title, summary, _, _ = parse_post(p["message"])
         created = datetime.fromtimestamp(p["createdTime"], timezone.utc).isoformat() if p.get("createdTime") else None
         out.append({"key": post_key(p), "title": title, "summary": summary, "image": p.get("photoURL"), "created_at": created,
-                    "suggested": not is_junk(p), "reason": junk_reason(p), "category": detect_categories(p["message"])[0], "status": await post_status(post_key(p), post_hash(p["message"]))})
+                    "suggested": not own_link and not is_junk(p), "reason": "Link na vlastiti portal" if own_link else junk_reason(p), "category": detect_categories(p["message"])[0], "status": "own_link" if own_link else await post_status(post_key(p), post_hash(p["message"]))})
     return out
 
 
@@ -246,6 +248,9 @@ async def run_import(user, limit=8, remove_samples=False, auto=False, operator=N
         imported, skipped, ignored = [], 0, 0
         min_ts = datetime.now(timezone.utc).timestamp() - max_age_hours * 3600 if max_age_hours else 0
         for p in reversed(posts):
+            if own_site_link(p, [settings.get("site_url"), os.environ.get("SITE_URL"), "https://cazin-carsija.ba"]):
+                skipped += 1
+                continue
             key, h = post_key(p), post_hash(p["message"])
             if keys is not None and key not in keys:
                 if await post_status(key, h) == "new":

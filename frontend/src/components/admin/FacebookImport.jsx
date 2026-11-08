@@ -6,7 +6,7 @@ import { Switch } from "../ui/switch";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 
-const STATUS = { imported: "Već objavljeno", ignored: "Ranije preskočeno", new: "Nova" };
+const STATUS = { own_link: "Link na vlastiti portal – preskočeno", imported: "Već objavljeno", ignored: "Ranije preskočeno", new: "Nova" };
 
 const PostList = ({ posts, sel, toggle, cats, forced, setForced }) => {
   if (!posts) return <p className="text-slate-500 flex items-center gap-2" data-testid="fb-posts-loading"><Loader2 className="w-4 h-4 animate-spin" />Učitavam objave sa Facebooka…</p>;
@@ -14,13 +14,13 @@ const PostList = ({ posts, sel, toggle, cats, forced, setForced }) => {
   return (
     <div className="grid gap-2 max-h-[45vh] overflow-y-auto pr-1" data-testid="fb-posts-list">
       {posts.map((p) => (
-        <label key={p.key} className={`flex gap-3 items-start border rounded-md p-2 ${p.status === "imported" ? "opacity-50" : "cursor-pointer hover:bg-slate-50"}`} data-testid={`fb-post-${p.key}`}>
-          <input type="checkbox" className="mt-1" disabled={p.status === "imported"} checked={sel.includes(p.key)} onChange={() => toggle(p.key)} data-testid={`fb-post-check-${p.key}`} />
+        <label key={p.key} className={`flex gap-3 items-start border rounded-md p-2 ${["imported", "own_link"].includes(p.status) ? "opacity-50" : "cursor-pointer hover:bg-slate-50"}`} data-testid={`fb-post-${p.key}`}>
+          <input type="checkbox" className="mt-1" disabled={["imported", "own_link"].includes(p.status)} checked={sel.includes(p.key)} onChange={() => toggle(p.key)} data-testid={`fb-post-check-${p.key}`} />
           {p.image ? <img src={p.image} alt="" className="w-16 h-12 object-cover rounded-sm shrink-0" referrerPolicy="no-referrer" /> : <div className="w-16 h-12 rounded-sm bg-slate-100 text-[10px] text-slate-400 grid place-items-center shrink-0">bez slike</div>}
           <span className="min-w-0">
             <span className="font-semibold block leading-tight">{p.title}</span>
             <span className="text-xs text-slate-500">{fmtDate(p.created_at)} · {STATUS[p.status]}{p.status === "new" && p.reason && ` · ${p.reason}`}</span>
-            {p.status !== "imported" && (
+            {!["imported", "own_link"].includes(p.status) && (
               <select value={forced[p.key] || ""} onChange={(e) => setForced({ ...forced, [p.key]: e.target.value })} onClick={(e) => e.stopPropagation()} className="mt-1 border rounded-sm px-2 py-1 text-xs w-full max-w-xs" data-testid={`fb-post-cat-${p.key}`}>
                 <option value="">Rubrika automatski (AI odlučuje, prijedlog: {cats.find((c) => c.slug === p.category)?.name || p.category})</option>
                 {cats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
@@ -89,7 +89,7 @@ export const FacebookImport = ({ onDone }) => {
             <DialogTitle>Uvoz objava sa Facebook stranice</DialogTitle>
             {res ? (
               <div className="grid gap-2 text-sm" data-testid="fb-import-result">
-                <p>Objavljeno: <strong>{res.imported.length}</strong> · Već uvezeno ranije: {res.skipped}{res.ignored > 0 && ` · Preskočeno (neće se automatski uvoziti): ${res.ignored}`}{res.removed_samples > 0 && ` · Obrisano probnih: ${res.removed_samples}`}</p>
+                <p>Objavljeno: <strong>{res.imported.length}</strong> · Preskočeno (ranije uvezeno ili link na portal): {res.skipped}{res.ignored > 0 && ` · Preskočeno (neće se automatski uvoziti): ${res.ignored}`}{res.removed_samples > 0 && ` · Obrisano probnih: ${res.removed_samples}`}</p>
                 <ul className="list-disc pl-5">{res.imported.map((t) => <li key={t}>{t}</li>)}</ul>
                 <Button className="bg-ccn-navy w-fit" onClick={close} data-testid="fb-import-close">Zatvori</Button>
               </div>
