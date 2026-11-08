@@ -19,7 +19,7 @@ COERCE = {"str": lambda v: str(v or "").strip(), "int": lambda v: int(v or 0), "
           "html": lambda v: sanitize_html(str(v or "")), "any": lambda v: v}
 
 
-def crud(path, coll, perm, fields, sort=("order", 1), hook=None, log=True):
+def crud(path, coll, perm, fields, sort=("order", 1), hook=None, log=True, on_delete=None):
     def build(body, existing=None):
         doc = {k: COERCE[t](body.get(k)) for k, t in fields.items() if k in body}
         return doc
@@ -56,9 +56,12 @@ def crud(path, coll, perm, fields, sort=("order", 1), hook=None, log=True):
 
     @router.delete(f"/{path}/{{item_id}}", name=f"delete_{path}")
     async def _delete(item_id: str, user=Depends(require(perm))):
+        ex = await db[coll].find_one({"id": item_id}, {"_id": 0})
         r = await db[coll].delete_one({"id": item_id})
         if not r.deleted_count:
             raise HTTPException(404, "Nije pronađeno")
+        if on_delete:
+            await on_delete(ex)
         await audit(user, f"{path}.delete", path, item_id)
         return {"ok": True}
 
@@ -71,6 +74,23 @@ async def cat_hook(doc, user, ex):
         await rename_category_links(ex["slug"], doc["slug"], doc.get("name") or ex.get("name"), ex.get("name"))
         doc["old_slugs"] = [s for s in dict.fromkeys([*(ex.get("old_slugs") or []), ex["slug"]]) if s != doc["slug"]]
     return doc
+
+
+async def remove_category_links(cat):
+    slugs = {cat["slug"], *(cat.get("old_slugs") or [])}
+    urls = {f"/kategorija/{s}" for s in slugs}
+    hp = await db.settings.find_one({"key": "homepage"}, {"_id": 0})
+    if hp:
+        val = hp.get("value") or {}
+        for k in ("draft", "published"):
+            val[k] = [b for b in val.get(k) or [] if b.get("category_slug") not in slugs]
+        await db.settings.update_one({"key": "homepage"}, {"$set": {"value": val}})
+    site = await db.settings.find_one({"key": "site"}, {"_id": 0})
+    if site:
+        s = site.get("value") or {}
+        for k in ("main_menu", "footer_menu"):
+            s[k] = [m for m in s.get(k) or [] if m.get("url") not in urls]
+        await db.settings.update_one({"key": "site"}, {"$set": {"value": s}})
 
 
 async def rename_category_links(old, new, name, old_name):
@@ -124,7 +144,7 @@ async def cam_hook(doc, user, ex):
 
 
 crud("categories", "categories", "categories.manage", {"name": "str", "slug": "str", "description": "str", "parent_id": "any", "seo_title": "str",
-     "seo_description": "str", "image": "str", "color": "str", "visible": "bool", "show_in_menu": "bool", "order": "int"}, hook=cat_hook)
+     "seo_description": "str", "image": "str", "color": "str", "visible": "bool", "show_in_menu": "bool", "order": "int"}, hook=cat_hook, on_delete=remove_category_links)
 crud("tags", "tags", "categories.manage", {"name": "str", "description": "str"}, sort=("name", 1), hook=tag_hook)
 crud("breaking", "breaking_news", "breaking.manage", {"title": "str", "article_id": "any", "url": "str", "priority": "int", "active": "bool",
      "start_at": "str", "end_at": "str"}, sort=("created_at", -1))

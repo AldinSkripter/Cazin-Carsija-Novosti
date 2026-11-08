@@ -77,7 +77,7 @@ HOME_BLOCKS = [
 
 
 async def heal_category_links():
-    from routes_admin import rename_category_links
+    from routes_admin import rename_category_links, remove_category_links
     cats = await db.categories.find({}, {"_id": 0, "slug": 1, "name": 1, "description": 1, "seo_title": 1}).to_list(500)
     slugs = {c["slug"] for c in cats}
     hp = (await db.settings.find_one({"key": "homepage"}) or {}).get("value") or {}
@@ -90,6 +90,9 @@ async def heal_category_links():
             await rename_category_links(old, match[0]["slug"], match[0]["name"], None)
             await db.categories.update_one({"slug": match[0]["slug"]}, {"$addToSet": {"old_slugs": old}})
             log.info("Popravljen link rubrike %s -> %s", old, match[0]["slug"])
+        elif not match and not await db.categories.find_one({"old_slugs": old}):
+            await remove_category_links({"slug": old})
+            log.info("Uklonjen link obrisane rubrike %s", old)
     for c in cats:
         guess = slugify((c.get("seo_title") or "").split(" – ")[0])
         if guess and guess != c["slug"] and guess not in slugs:

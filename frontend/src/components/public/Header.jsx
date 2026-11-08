@@ -64,7 +64,7 @@ function TopBar({ site }) {
 }
 
 export function Header() {
-  const { site } = useSite();
+  const { site, cats } = useSite();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -72,7 +72,8 @@ export function Header() {
     window.addEventListener("scroll", on, { passive: true });
     return () => window.removeEventListener("scroll", on);
   }, []);
-  const menu = site.main_menu || [{ label: "Naslovna", url: "/" }];
+  const known = new Set(cats.flatMap((c) => [c.slug, ...(c.old_slugs || [])]));
+  const menu = (site.main_menu || [{ label: "Naslovna", url: "/" }]).filter((m) => !cats.length || !m.url.startsWith("/kategorija/") || known.has(m.url.slice(12)));
   return (
     <>
       <a href="#main" className="skip-link">Preskoči na sadržaj</a>
