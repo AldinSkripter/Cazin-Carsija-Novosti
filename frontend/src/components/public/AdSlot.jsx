@@ -23,7 +23,12 @@ export function AdSlot({ position, className = "", minH = 0 }) {
     });
     return () => { live = false; };
   }, [position]);
-  const adsterra = position === "sidebar" ? <AdsterraBanner /> : ["below_article", "between_cards"].includes(position) ? <AdsterraBanner variant="native" /> : null;
+  const adsterra = position === "sidebar" ? <AdsterraBanner /> : position === "below_article" ? (
+    <div className="mt-8 grid gap-8">
+      <AdsterraBanner variant="native" />
+      <AdsterraBanner variant="compact" />
+    </div>
+  ) : position === "between_cards" ? <AdsterraBanner variant="native" /> : null;
   if (!ad) return adsterra;
   return (
     <>
